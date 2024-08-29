@@ -1,6 +1,6 @@
 ## Function to prepare work environment
-checkAndLoadPackages <- function(required.packages = c("rlang","tidyverse","scales", "gridExtra","patchwork","ggridges","gstat",
-                                                       "colorspace","ggpubr", "labeling", "farver"), library.loc){
+checkPackages <- function(required.packages = c("rlang","tidyverse","scales", "gridExtra","patchwork","ggridges","gstat",
+                                                "colorspace","ggpubr", "labeling", "farver"), library.loc){
   .libPaths(new = c(library.loc,.libPaths()))
   if(length(installed.packages(lib.loc = library.loc))==0){
     packages <- installed.packages(lib.loc = paste0(R.home(),"/library"))
@@ -9,25 +9,22 @@ checkAndLoadPackages <- function(required.packages = c("rlang","tidyverse","scal
   required.packages <- required.packages
   not.installed <- required.packages[!required.packages %in% packages[,"Package"]]
   if(length(not.installed)==0){
-    print("Required packages loaded.")
-    print("Ignore any further warnings.")
-    lapply(required.packages,function(x){require(x, character.only = T,lib.loc = library.loc)})}else{
-      print("Additional packages needed, installing now.")
-      print("Ignore any further warnings.")
-      for (j in not.installed){
-        if(j == "devtools"){
-          install.packages(j,lib = library.loc,dependencies = T)
-        }else{
-          install.packages(j,lib =  library.loc, dependencies = T)
-          while(!j %in% rownames(installed.packages(lib.loc = library.loc))){
-            print(paste("Waiting for installation of ", j))
-          }
-        }
-      }
-      for(i in required.packages){
-        require(i, character.only = T,lib.loc = library.loc)
-      }
+    print("Required packages installed.")
+    return(TRUE)}else{
+      print("Additional packages needed, please install the following packages and re-run function:")
+      print(not.installed)
+      return(FALSE)
     }
+}
+
+loadPackages <- function(required.packages = c("rlang","tidyverse","scales", "gridExtra","patchwork","ggridges","gstat",
+                                               "colorspace","ggpubr", "labeling", "farver"), library.loc,required.packages.installed){
+  .libPaths(new = c(library.loc,.libPaths()))
+  
+  if(required.packages.installed){
+  lapply(required.packages,function(x){require(x, character.only = T,lib.loc = library.loc)})}else{
+    print("Additional packages needed, please install the required packages and re-run function checkPackages.")
+  }
 }
 
 ## Function to read in data that is created from DEB Gammarus with Hans' Smalltalk implementation
@@ -167,7 +164,7 @@ popSize <- function (simulation.data.list, application.pulse.shift=F){
     names(scens) <- c("exposureConcentration","tempAmplitude","pulseShift")
     
     out <- lapply(simulation.data.list,function(x){
-
+      
       # extract information on SD vs SDT (IT vs ITT)
       m.type <- strsplit(x$scenarios[1][1,],split = "Gammarus")[[1]][1]
       m.type <- substr(m.type,start = 4, stop = nchar(m.type))

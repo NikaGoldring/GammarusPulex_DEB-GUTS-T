@@ -1,4 +1,6 @@
-checkAndLoadPackages(library.loc = "C:/ProgramData/R/...") # Adjust to your settings
+pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/...") # Adjust to your settings
+loadPackages(library.loc = "C:/ProgramData/R/...", # Adjust to your settings
+             required.packages.installed = pks.installed)
 
 ##############################################################
 ############### constant exposures ###########################
