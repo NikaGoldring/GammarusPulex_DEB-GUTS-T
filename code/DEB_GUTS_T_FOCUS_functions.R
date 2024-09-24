@@ -22,15 +22,17 @@ loadPackages <- function(required.packages = c("rlang","tidyverse","scales", "gr
   .libPaths(new = c(library.loc,.libPaths()))
   
   if(required.packages.installed){
-  lapply(required.packages,function(x){require(x, character.only = T,lib.loc = library.loc)})}else{
-    print("Additional packages needed, please install the required packages and re-run function checkPackages.")
-  }
+    lapply(required.packages,function(x){require(x, character.only = T,lib.loc = library.loc)})}else{
+      print("Additional packages needed, please install the required packages and re-run function checkPackages.")
+    }
 }
 
 ## Function to read in data that is created from DEB Gammarus with Hans' Smalltalk implementation
-readData <- function(data.location, guts.model.version,
+readData <- function(data.location, 
+                     guts.model.version,
                      ignore.version,
-                     filter.concentrations = T, filter.temp.amplitudes = T,
+                     filter.concentrations = T, 
+                     filter.temp.amplitudes = T,
                      desired.exposure.concentration,
                      desired.temp.amplitude,
                      application.pulse.shift = F){
@@ -45,7 +47,7 @@ readData <- function(data.location, guts.model.version,
         }}) %>% 
     do.call(rbind,.) %>% as.vector()
   
-  # Manual exclusion of folders containing "verylow" in name, as we don't know how these differ from regular runs ##NOTE: these are the constant exposure scenarios
+  # Exclude (therefore it's called ignore) the folders of either constant = "verylow", or pulsed exposure. 
   if(ignore.version=="verylow"){
     results.list <- results.list[!grepl(ignore.version,results.list)]
   }else{
@@ -78,7 +80,7 @@ readData <- function(data.location, guts.model.version,
       
     }
     
-    # Create a vector with all folder names, these are the folders where the text output files are stored
+    # Create a vector "ls" with all folder names, these are the folders where the text output files are stored
     ls <- paste0("x1s",1:length(list.dirs(path = paste0(x,"/x1/"),recursive = F,full.names = F)))
     
     # match scenario.numbers and scenario.numbers.2 to keep only ls entries that match the desired concentrations and temp amplitudes 
@@ -95,56 +97,63 @@ readData <- function(data.location, guts.model.version,
     }
     
     # Extract some run info
-    run.info <- read.csv(list.files(path = paste0(x[[1]],"/x1/x1s1/"),
+    run.info <- read.csv(list.files(path = paste0(x[1],"/x1/x1s1/"),
                                     pattern = "ModelSystem_control.csv",full.names = T),
                          header = F,stringsAsFactors = F)[,1:2]
     temp.info <- pivot_wider(run.info,names_from = V1, values_from = V2) %>% as.data.frame()
     
-    # Loop through ls (i.e., the folders containing DEB simulation outputs), only look for folders with "stagestructureEmbJuvAdultsInds"
-    # these contain, for each day in the simulation, the number of individuals.
-    # More specifically: only keep column 4 of the data which is the total number of all stages combined.
-    output <- lapply(ls, function(y) {
+    #### Loop through ls (i.e., the folders containing DEB simulation outputs)
+    output <- lapply(ls, function(y) {  # for each element y in ls 
+      # Store the temperature information used in the simulations 
+      envT <- read.delim(list.files(path = paste0(x,"/x1/",y), pattern = "environment",full.names = T)[1])
+        
+      # Only look for folders with "stagestructureEmbJuvAdultsInds"
+      # these contain, for each day in the simulation, the number of individuals.
       ls.data.files <- list.files(path = paste0(x,"/x1/",y), pattern = "stageStructureEmbrJuvAdultsInds",full.names = T)
-      input <- lapply(ls.data.files, function(z){
-        ind <- read.delim(file = z)[,4]
+      
+      input <- lapply(ls.data.files, function(z){ 
+        ind <- read.delim(file = z)[,4] # More specifically: only keep column 4 of the data which is the total number of all stages combined.
         ind
-      }) %>% do.call(cbind,.) %>% as.matrix()
-      
+          }
+      ) %>% do.call(cbind,.) %>% as.matrix()
+        
       # some scenarios don't survive the first period, these should only used if >=3 of the replicates survive the first year
-      input <- as.matrix(input[,apply(as.matrix(input[(temp.info$`startApplicationYear:` - temp.info$`startYear:`)*365,]),2,
-                                      FUN = function(x) x>0)])
-      
+      input <- as.matrix(input[,apply(as.matrix(input[(temp.info$`startApplicationYear:` - temp.info$`startYear:`)*365,]),2,FUN = function(x) x>0)])
+        
       # calculate the means and SDs for each of the five replicates
       if(application.pulse.shift){
         if(ncol(input)>=3){
           output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
-                                        scenario.id = y,
-                                        model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1],start = 3,
-                                                               stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1])),
-                                        time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],
-                                                                                  split = "_")[[1]][5],"t")[[1]][2]))}
+                                          envT = envT$temperature,
+                                          scenario.id = y,
+                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1],start = 3,
+                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1])),
+                                          time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],
+                                                                                    split = "_")[[1]][5],"t")[[1]][2]))}
         else{
           output.scenario <- data.frame(mean = NA, sd = NA,
-                                        scenario.id = y,
-                                        model.version = strsplit(x,split = "/")[[1]][8],
-                                        time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][[length(strsplit(x,split = "/")[[1]])]],
-                                                                                  split = "_")[[1]][5],"t")[[1]][2]))
-        }
-      }else{
-        if(ncol(input)>=3){
-          output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
-                                        scenario.id = y,
-                                        model.version = strsplit(x,split = "/")[[1]][8])}
-        else{
-          output.scenario <- data.frame(mean = NA, sd = NA,
-                                        scenario.id = y,
-                                        model.version = strsplit(x,split = "/")[[1]][8])
+                                          envT = envT$temperature,
+                                          scenario.id = y,
+                                          model.version = strsplit(x,split = "/")[[1]][8],
+                                          time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][[length(strsplit(x,split = "/")[[1]])]],
+                                                                                    split = "_")[[1]][5],"t")[[1]][2]))
         }
       }
-      
+      else{
+        if(ncol(input)>=3){
+          output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
+                                          envT = envT$temperature,
+                                          scenario.id = y,
+                                          model.version = strsplit(x,split = "/")[[1]][5])} # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
+        else{
+          output.scenario <- data.frame(mean = NA, sd = NA,
+                                          envT = envT$temperature,
+                                          scenario.id = y,
+                                          model.version = strsplit(x,split = "/")[[1]][5]) # Hard coded file path, needs adjustment  
+        }
+      }
       output.scenario
     })
-    
     
     # Return the output
     return(list(scenarios = scenarios, data = output, run.info = run.info))
@@ -155,9 +164,10 @@ readData <- function(data.location, guts.model.version,
 
 ## Function to get population size at the end of the scenarios, as well as quantile information
 popSize <- function (simulation.data.list, application.pulse.shift=F){
+  #### this part is not adjusted yet.
   if(application.pulse.shift){
     scens <- as.matrix(x$scenarios)
-    scens <- apply(scens,1,function(z) as.numeric(apply(as.matrix(unlist(strsplit(z," "))[c(8,11,13)]),1,
+    scens <- apply(scens,1,function(z) as.numeric(apply(as.matrix(unlist(strsplit(z," "))[c(8,11,13)]),1, ### what is 13? ->pulse shift
                                                         function(x) substr(x,start = 1,nchar(x)-1))))
     scens <- t(scens)
     scens <- as.data.frame(scens)
@@ -172,8 +182,10 @@ popSize <- function (simulation.data.list, application.pulse.shift=F){
       
       df1 <- lapply(x$data, function(y){
         if(sum(is.na(y$mean))==0){
-          # Calculate quantiles
-          q.df <- t(as.matrix(quantile(y$mean[1096:(nrow(y)-2190)],seq(0.01,1,0.01))))
+          # Calculate quantiles ###hardcoded numbers needs adjustment!!! here 3 years warm up and 6 years without application in the end
+          # We can use the ModeslSystem control csv for this actually, this holds start and end year of application 
+          q.df <- t(as.matrix(quantile(y$mean[1096:(nrow(y)-2190)],
+                                       seq(0.01,1,0.01)))) #Calculating 100 quantiles
           colnames(q.df) <- paste0(m.type,"_Q",gsub(pattern = "%","",colnames(q.df)))
           
           # calculate last day endpoint
@@ -194,11 +206,16 @@ popSize <- function (simulation.data.list, application.pulse.shift=F){
     })
     return(out)}else{
       scens <- simulation.data.list[[1]]$scenarios
-      scens <- apply(scens,1,function(z) as.numeric(apply(as.matrix(unlist(strsplit(z," "))[c(8,11)]),1,
-                                                          function(x) substr(x,start = 1,nchar(x)-1))))
-      scens <- t(scens)
+      scens <- apply(scens,1, #the 1 as the second argument in apply function means the function is being applied to each row 
+                     function(z) as.numeric(  #save as numeric value
+                       apply(as.matrix(unlist(strsplit(z," ")) #splitting scenario string by spaces then unlisting them into a vector
+                                       [c(8)]),1,     #selecting element(s) of the vector ##Needs adjustment based on input string
+                             #here: 8 = exposure concentration
+                             function(x) substr(x, start = 1, nchar(x) - 1))))  # removes the % from each line (don't know why yet..)
+      
+      scens <- t(scens)  #transpose 
       scens <- as.data.frame(scens)
-      names(scens) <- c("exposureConcentration","tempAmplitude")
+      names(scens) <- c("exposureConcentration")
       
       out <- lapply(simulation.data.list,function(x){
         
@@ -292,21 +309,28 @@ checkParamArrheniusCorrection <- function(){
 ### OOK plots voor verschil binnen de groepen? 1:4 en 5:8?
 
 ## Function for plotting two model versions
-plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concentrations,desired.temp.amplitudes,time.range,application.pulse.shift = F){
-  # quick function to calculate temperature pattern
-  temps <- function(tAmplitude, length.time.series){
-    15 - tAmplitude * cos(((c(1:length.time.series) - 31)/365)*2*pi)
-  }
+plotTAmpPopDynamics <- function(df_SD.list,
+                                exposure.type,
+                                desired.exposure.concentrations,
+                                desired.temp.amplitudes,
+                                time.range,
+                                application.pulse.shift = F){
+  
   if(application.pulse.shift){
     # full data set
     df <- df_SD.list
     
-    # select all scenarios matching concentrations and T-amplitudes
+    # select all scenarios matching concentrations and T-amplitudes ->> This should go into a seperate function that is called here and in other functions, to avoid correcting it in multiple places ic code needs changing
     scens <- as.matrix(df[[1]]$scenarios$V1)
-    scens <- apply(scens,1,function(z) as.numeric(apply(as.matrix(unlist(strsplit(z," "))[c(8,11)]),1,function(x) substr(x,start = 1,nchar(x)-1))))
-    scens <- t(scens)
+    scens <- apply(scens,1, #the 1 as the second argument in apply function means the function is being applied to each row 
+                   function(z) as.numeric(  #save as numeric value
+                     apply(as.matrix(unlist(strsplit(z," ")) #splitting scenario string by spaces then unlisting them into a vector
+                                     [c(8)]),1,     #selecting element(s) of the vector ##Needs adjustment based on input string
+                           #here: 8 = exposure concentration
+                           function(x) substr(x, start = 1, nchar(x) - 1))))  # removes the % from each line (don't know why yet..)
+    scens <- t(scens)  #transpose 
     scens <- as.data.frame(scens)
-    names(scens) <- c("exposureConcentration","tempAmplitude")
+    names(scens) <- c("exposureConcentration")
     
     # create boolean for scenarios
     select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations & scens$tempAmplitude %in% desired.temp.amplitudes
@@ -336,11 +360,10 @@ plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concen
         out$date <- days.full.period
         out <- out[out$date %in% days.application,]
         out$exposureConc <- scens$exposureConcentration
-        out$envTamp <- scens$tempAmplitude}
+      }
       else{
         out$date <- NA
         out$exposureConc <- scens$exposureConcentration[x]
-        out$envTamp <- scens$tempAmplitude[x]
       }
       out}) %>% do.call(rbind,.)
     df.SDT <- lapply(which(types == "SDT"),function(x){
@@ -349,11 +372,10 @@ plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concen
         out$date <- days.full.period
         out <- out[out$date %in% days.application,]
         out$exposureConc <- scens$exposureConcentration
-        out$envTamp <- scens$tempAmplitude}
+      }
       else{
         out$date <- NA
         out$exposureConc <- scens$exposureConcentration[x]
-        out$envTamp <- scens$tempAmplitude[x]
       }
       out}) %>% do.call(rbind,.)
     
@@ -371,13 +393,13 @@ plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concen
     df.SDT$year <- format(df.SDT$date,"%Y")
     df.SDT$time_shift[is.na(df.SDT$time_shift)] <- 0
     
-    # data frame with temperature data
-    Ts <- data.frame(x = 1:365, apply(as.matrix(unique(df.SD$envTamp)),1,function(x){temps(x,365)}))
-    Ts <- pivot_longer(Ts,cols = -1,names_to = "grp",values_to = "Temperature")
-    if(length(unique(df.SD$envTamp))==1){
-      Ts$grp <- "X1"
-    }
-    Ts <- left_join(Ts,data.frame(grp = paste0("X",1:length(unique(df.SD$envTamp))),envTamp = unique(df.SD$envTamp)))
+    # # data frame with temperature data
+    # Ts <- data.frame(x = 1:365, apply(as.matrix(unique(df.SD$envTamp)),1,function(x){temps(x,365)})) 
+    # Ts <- pivot_longer(Ts,cols = -1,names_to = "grp",values_to = "Temperature")
+    # if(length(unique(df.SD$envTamp))==1){
+    #   Ts$grp <- "X1"
+    # }
+    # Ts <- left_join(Ts,data.frame(grp = paste0("X",1:length(unique(df.SD$envTamp))),envTamp = unique(df.SD$envTamp)))
     
     # create a colour scale for the exposure concentrations
     cols <- grDevices::colorRampPalette(colors = c("darkblue","red"))
@@ -410,7 +432,7 @@ plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concen
       scale_y_continuous("Mean population size") +
       scale_x_continuous("Day of the year",breaks = seq(0,360,20),guide = guide_axis(n.dodge = 2)) +
       scale_colour_manual(paste0("Shift application\nstart (days)"), values = cols) +
-      guides(linetype = guide_legend(title = "Temperature amplitude")) + 
+      #guides(linetype = guide_legend(title = "Temperature amplitude")) + 
       geom_vline(xintercept = c(100),linetype = 6,lwd = 0.5, show.legend = F) +
       # facet_wrap(.~envTamp,nrow = length(h)) + 
       ggtitle("DEB-GUTS-T") + 
@@ -448,167 +470,170 @@ plotTAmpPopDynamics <- function(df_SD.list,exposure.type,desired.exposure.concen
       scale_y_continuous("Relative population size (%)") +
       scale_x_continuous("Day of the year",breaks = seq(0,360,20),guide = guide_axis(n.dodge = 2)) +
       scale_colour_manual(paste0("Shift application\nstart (days)"), values = cols) +
-      guides(linetype = guide_legend(title = "Temperature amplitude")) + 
+      #guides(linetype = guide_legend(title = "Temperature amplitude")) + 
       geom_vline(xintercept = c(100),linetype = 6,lwd = 0.5, show.legend = F) +
       ggtitle("DEB-GUTS-T") + 
       theme_pubr(legend = "right") +
       coord_cartesian(ylim = c(0,500),expand = T)
     
-    list(SD = p1, SDT = p2,SD_Rel = p3, SDT_Rel = p4)}else{
-      
-      
-      ################################################################
-      ######################## From here is the original code ##########################
-      # full data set
-      df <- df_SD.list
-      
-      # select all scenarios matching concentrations and T-amplitudes
-      scens <- as.matrix(df[[1]]$scenarios$V1)
-      scens <- apply(scens,1,function(z) as.numeric(apply(as.matrix(unlist(strsplit(z," "))[c(8,11)]),1,function(x) substr(x,start = 1,nchar(x)-1))))
-      scens <- t(scens)
-      scens <- as.data.frame(scens)
-      names(scens) <- c("exposureConcentration","tempAmplitude")
-      
-      # create boolean for scenarios
-      select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations & scens$tempAmplitude %in% desired.temp.amplitudes
-      scens <- scens[select.scens,]
-      
-      # select all dataframes matching the desired concentrations and T-amplitudes by matching multiple string patterns
-      df.SD <- df[[1]]$data[select.scens]
-      df.SDT <- df[[2]]$data[select.scens]
-      
-      # select only application window data and add scenario info
-      ## Note: this seems trivial, but sadly isn't....
-      ## Reason: simulations appear to use actual date information, which means we have to account for leap-years
-      ## this can only be done by making a time-series of actual dates, for which we need the run control info
-      startYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="startYear:"]
-      endYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="endYear:"]
-      startApplicationYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="startApplicationYear:"]
-      endApplicationYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="endApplicationYear:"]
-      
-      days.warmup <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(startApplicationYear-1,"/12/31",sep = "")),"days")
-      days.application <- seq(as.Date(paste(startApplicationYear,"/1/1",sep = "")),as.Date(paste(endApplicationYear,"/12/31",sep = "")),"days")
-      days.recovery <- seq(as.Date(paste(endApplicationYear + 1,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
-      days.full.period <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
-      
-      df.SD <- lapply(1:nrow(scens),function(x){
-        out <- df.SD[[x]]
-        if(!nrow(out)==1){
-          out$date <- days.full.period
-          out <- out[out$date %in% days.application,]
-          out$exposureConc <- scens$exposureConcentration[x]
-          out$envTamp <- scens$tempAmplitude[x]}
-        else{
-          out$date <- NA
-          out$exposureConc <- scens$exposureConcentration[x]
-          out$envTamp <- scens$tempAmplitude[x]
-        }
-        out}) %>% do.call(rbind,.)
-      df.SDT <- lapply(1:nrow(scens),function(x){
-        out <- df.SDT[[x]]
-        if(!nrow(out)==1){
-          out$date <- days.full.period
-          out <- out[out$date %in% days.application,]
-          out$exposureConc <- scens$exposureConcentration[x]
-          out$envTamp <- scens$tempAmplitude[x]}
-        else{
-          out$date <- NA
-          out$exposureConc <- scens$exposureConcentration[x]
-          out$envTamp <- scens$tempAmplitude[x]
-        }
-        out}) %>% do.call(rbind,.)
-      
-      h <- time.range
-      if(!grepl(",",h)){
-        h <- as.numeric(h)}else{
-          h <- as.numeric(unlist(strsplit(h,",")))
-        }
-      
-      df.SD <- df.SD[format(df.SD$date,"%Y") %in% h,]
-      df.SD$year <- format(df.SD$date,"%Y")
-      
-      df.SDT <- df.SDT[format(df.SDT$date,"%Y") %in% h,]
-      df.SDT$year <- format(df.SDT$date,"%Y")
-      
-      # data frame with temperature data
-      Ts <- data.frame(x = 1:365, apply(as.matrix(unique(df.SD$envTamp)),1,function(x){temps(x,365)}))
-      Ts <- pivot_longer(Ts,cols = -1,names_to = "grp",values_to = "Temperature")
-      Ts <- left_join(Ts,data.frame(grp = paste0("X",1:length(unique(df.SD$envTamp))),envTamp = unique(df.SD$envTamp)))
-      
-      # create a colour scale for the exposure concentrations
-      cols <- grDevices::colorRampPalette(colors = c("forestgreen","red"))
-      cols <- cols(length(desired.exposure.concentrations))
-      
-      if(exposure.type == "pulsed"){
-        p1 <- ggplot(df.SD) +
-          geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
-          # geom_rect(aes(xmin = 100,ymin = 0, xmax = 200, ymax = max(df.SD$mean)),fill = "grey75") +
-          geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
-                        colour = as.factor(exposureConc)),lwd = 1) +
-          scale_fill_manual(values = cols) +
-          scale_colour_manual(values = cols) +
-          guides(colour = "none",fill = "none",linetype = "none") + 
-          xlab("Day of the year") + ylab("Mean population size") +
-          geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F) +
-          facet_wrap(.~envTamp,nrow = length(h)) + ggtitle("DEB-GUTS") + 
-          coord_cartesian(ylim = c(0,1500),expand = T) +
-          theme_pubr() 
-        
-        p2 <- ggplot(df.SDT) +
-          geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
-          # geom_rect(aes(xmin = 100,ymin = 0, xmax = 200, ymax = max(df.SD$mean)),fill = "grey75") +
-          geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
-                        colour = as.factor(exposureConc)),lwd = 1) +
-          scale_y_continuous("Mean population size") +
-          scale_x_continuous("Day of the year") +
-          scale_fill_manual(values = cols) +
-          scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
-          guides(linetype = guide_legend(title = "Temperature amplitude")) + 
-          facet_wrap(.~envTamp,nrow = length(h)) + ggtitle("DEB-GUTS-T") + 
-          theme_pubr(legend = "right") +
-          coord_cartesian(ylim = c(0,1500),expand = T) +
-          geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F)
+    list(SD = p1, SDT = p2, SD_Rel = p3, SDT_Rel = p4)}
+  else{
+    ################################################################
+    ################# From here is the original code ##########################
+    # full data set
+    df <- df_SD.list
+    
+    # select all scenarios matching concentrations and T-amplitudes ->> This should go into a seperate function that is called here and in other functions, to avoid correcting it in multiple places ic code needs changing
+    scens <- as.matrix(df[[1]]$scenarios$V1)
+    scens <- apply(scens,1, #the 1 as the second argument in apply function means the function is being applied to each row 
+                   function(z) as.numeric(  #save as numeric value
+                     apply(as.matrix(unlist(strsplit(z," ")) #splitting scenario string by spaces then unlisting them into a vector
+                                     [c(8)]),1,     #selecting element(s) of the vector ##Needs adjustment based on input string
+                           #here: 8 = exposure concentration
+                           function(x) substr(x, start = 1, nchar(x) - 1))))  # removes the % from each line (don't know why yet..)
+    scens <- t(scens)  #transpose 
+    scens <- as.data.frame(scens)
+    names(scens) <- c("exposureConcentration")
+    
+    # create boolean for scenarios
+    select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations
+    scens <- scens[select.scens,]
+    
+    # select all dataframes matching the desired concentrations and T-amplitudes by matching multiple string patterns
+    df.SD <- df[[1]]$data[select.scens]
+    df.SDT <- df[[2]]$data[select.scens]
+    
+    # select only application window data and add scenario info
+    ## Note: this seems trivial, but sadly isn't....
+    ## Reason: simulations appear to use actual date information, which means we have to account for leap-years
+    ## this can only be done by making a time-series of actual dates, for which we need the run control info
+    ### Here we already have the code that gets the infos from the csv!!!
+    startYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="startYear:"]
+    endYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="endYear:"]
+    startApplicationYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="startApplicationYear:"]
+    endApplicationYear <- df[[1]]$run.info$V2[df[[1]]$run.info$V1=="endApplicationYear:"]
+    
+    days.warmup <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(startApplicationYear-1,"/12/31",sep = "")),"days")
+    days.application <- seq(as.Date(paste(startApplicationYear,"/1/1",sep = "")),as.Date(paste(endApplicationYear,"/12/31",sep = "")),"days")
+    days.recovery <- seq(as.Date(paste(endApplicationYear + 1,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
+    days.full.period <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
+    
+    df.SD <- lapply(1:nrow(scens),function(x){
+      out <- df.SD[[x]]
+      if(!nrow(out)==1){
+        out$date <- days.full.period
+        out <- out[out$date %in% days.application,]
+        out$exposureConc <- scens$exposureConcentration[x]
       }
-      if(exposure.type=="constant"){
-        p1 <- ggplot(df.SD) +
-          geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
-          geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
-                        colour = as.factor(exposureConc)),lwd = 1) +
-          scale_fill_manual(values = cols) +
-          scale_colour_manual(values = cols) +
-          guides(colour = "none",fill = "none",linetype = "none") + 
-          xlab("Day of the year") + ylab("Mean population size") +
-          facet_wrap(.~envTamp,nrow = length(h)) + ggtitle("DEB-GUTS") + 
-          coord_cartesian(ylim = c(0,1500),expand = T) +
-          theme_pubr()
-        
-        p2 <- ggplot(df.SDT) +
-          geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
-          geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
-                        colour = as.factor(exposureConc)),lwd = 1) +
-          scale_y_continuous("Mean population size") +
-          scale_x_continuous("Day of the year") +
-          scale_fill_manual(values = cols) +
-          scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
-          guides(linetype = guide_legend(title = "Temperature amplitude")) + 
-          facet_wrap(.~envTamp,nrow = length(h)) + ggtitle("DEB-GUTS-T") + 
-          coord_cartesian(ylim = c(0,1500),expand = T) +
-          theme_pubr(legend = "right")
+      else{
+        out$date <- NA
+        out$exposureConc <- scens$exposureConcentration[x]
       }
+      out}) %>% do.call(rbind,.)
+    df.SDT <- lapply(1:nrow(scens),function(x){
+      out <- df.SDT[[x]]
+      if(!nrow(out)==1){
+        out$date <- days.full.period
+        out <- out[out$date %in% days.application,]
+        out$exposureConc <- scens$exposureConcentration[x]
+      }
+      else{
+        out$date <- NA
+        out$exposureConc <- scens$exposureConcentration[x]
+      }
+      out}) %>% do.call(rbind,.)
+    
+    h <- time.range
+    if(!grepl(",",h)){
+      h <- as.numeric(h)}else{
+        h <- as.numeric(unlist(strsplit(h,",")))
+      }
+    
+    df.SD <- df.SD[format(df.SD$date,"%Y") %in% h,]
+    df.SD$year <- format(df.SD$date,"%Y")
+    
+    df.SDT <- df.SDT[format(df.SDT$date,"%Y") %in% h,]
+    df.SDT$year <- format(df.SDT$date,"%Y")
+    
+    # # data frame with temperature data
+    # Ts <- data.frame(x = 1:365, apply(as.matrix(unique(df.SD$envTamp)),1,function(x){temps(x,365)}))
+    # Ts <- pivot_longer(Ts,cols = -1,names_to = "grp",values_to = "Temperature")
+    # Ts <- left_join(Ts,data.frame(grp = paste0("X",1:length(unique(df.SD$envTamp))),envTamp = unique(df.SD$envTamp)))
+    
+    # create a colour scale for the exposure concentrations
+    cols <- grDevices::colorRampPalette(colors = c("forestgreen","red"))
+    cols <- cols(length(desired.exposure.concentrations))
+    
+    if(exposure.type == "pulsed"){
+      p1 <- ggplot(df.SD) +
+        geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
+        # geom_rect(aes(xmin = 100,ymin = 0, xmax = 200, ymax = max(df.SD$mean)),fill = "grey75") +
+        geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
+                      colour = as.factor(exposureConc)),lwd = 1) +
+        scale_fill_manual(values = cols) +
+        scale_colour_manual(values = cols) +
+        guides(colour = "none",fill = "none",linetype = "none") + 
+        xlab("Day of the year") + ylab("Mean population size") +
+        geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F) +
+        ggtitle("DEB-GUTS") + 
+        coord_cartesian(ylim = c(0,1500),expand = T) +
+        theme_pubr() 
       
-      list(SD = p1, SDT = p2)
+      p2 <- ggplot(df.SDT) +
+        geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
+        # geom_rect(aes(xmin = 100,ymin = 0, xmax = 200, ymax = max(df.SD$mean)),fill = "grey75") +
+        geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
+                      colour = as.factor(exposureConc)),lwd = 1) +
+        scale_y_continuous("Mean population size") +
+        scale_x_continuous("Day of the year") +
+        scale_fill_manual(values = cols) +
+        scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
+        ggtitle("DEB-GUTS-T") + 
+        theme_pubr(legend = "right") +
+        coord_cartesian(ylim = c(0,1500),expand = T) +
+        geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F)
     }
+    if(exposure.type=="constant"){
+      p1 <- ggplot(df.SD) +
+        geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
+        geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
+                      colour = as.factor(exposureConc)),lwd = 1) +
+        scale_fill_manual(values = cols) +
+        scale_colour_manual(values = cols) +
+        guides(colour = "none",fill = "none",linetype = "none") + 
+        xlab("Day of the year") + ylab("Mean population size") +
+        ggtitle("DEB-GUTS") + 
+        coord_cartesian(ylim = c(0,1500),expand = T) +
+        theme_pubr()
+      
+      p2 <- ggplot(df.SDT) +
+        geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
+        geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
+                      colour = as.factor(exposureConc)),lwd = 1) +
+        scale_y_continuous("Mean population size") +
+        scale_x_continuous("Day of the year") +
+        scale_fill_manual(values = cols) +
+        scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
+        ggtitle("DEB-GUTS-T") + 
+        coord_cartesian(ylim = c(0,1500),expand = T) +
+        theme_pubr(legend = "right")
+    }
+    
+    list(SD = p1, SDT = p2)
+  }
   
 }
 
-plotPopQuantilesTvsNoT <- function(popsize.data.frame, desired.exposure.concentrations,label.txt,model.type){
+plotPopQuantilesTvsNoT <- function(popsize.data.frame, 
+                                   desired.exposure.concentrations,
+                                   label.txt,
+                                   model.type){
   df <- popsize.data.frame[popsize.data.frame$exposureConcentration %in% desired.exposure.concentrations,]
   df <- df[order(df$exposureConcentration,decreasing = T),]
-  df <- df[!df$tempAmplitude == 12,] # excluding temp amplitude 12 as too many missing data from extinctions
   
   columns <- names(df)[grepl(pattern = paste(paste0("Q",c(10,50,90),"$"),collapse = "|"),x =   names(df))]
   
