@@ -491,13 +491,13 @@ plotTAmpPopDynamics <- function(df_SD.list,
                                      [c(8)]),1,     #selecting element(s) of the vector ##Needs adjustment based on input string
                            #here: 8 = exposure concentration
                            function(x) substr(x, start = 1, nchar(x) - 1))))  # removes the % from each line (don't know why yet..)
-    scens <- t(scens)  #transpose 
-    scens <- as.data.frame(scens)
-    names(scens) <- c("exposureConcentration")
+    scens <- data.frame(exposureConcentration = scens)
     
     # create boolean for scenarios
-    select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations
-    scens <- scens[select.scens,]
+    if(!is.null(desired.exposure.concentrations)){
+      select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations
+    scens <- scens[select.scens,]}else{select.scens <- rep(T,length(scens$exposureConcentration))}
+    
     
     # select all dataframes matching the desired concentrations and T-amplitudes by matching multiple string patterns
     df.SD <- df[[1]]$data[select.scens]
@@ -544,10 +544,6 @@ plotTAmpPopDynamics <- function(df_SD.list,
       out}) %>% do.call(rbind,.)
     
     h <- time.range
-    if(!grepl(",",h)){
-      h <- as.numeric(h)}else{
-        h <- as.numeric(unlist(strsplit(h,",")))
-      }
     
     df.SD <- df.SD[format(df.SD$date,"%Y") %in% h,]
     df.SD$year <- format(df.SD$date,"%Y")
@@ -562,7 +558,8 @@ plotTAmpPopDynamics <- function(df_SD.list,
     
     # create a colour scale for the exposure concentrations
     cols <- grDevices::colorRampPalette(colors = c("forestgreen","red"))
-    cols <- cols(length(desired.exposure.concentrations))
+    ncols <- ifelse(is.null(desired.exposure.concentrations),length(select.scens),length(desired.exposure.concentrations))
+    cols <- cols(ncols)
     
     if(exposure.type == "pulsed"){
       p1 <- ggplot(df.SD) +
@@ -577,7 +574,7 @@ plotTAmpPopDynamics <- function(df_SD.list,
         xlab("Day of the year") + ylab("Mean population size") +
         geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F) +
         ggtitle("DEB-GUTS") + 
-        coord_cartesian(ylim = c(0,1500),expand = T) +
+        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)),expand = T) +
         theme_pubr() 
       
       p2 <- ggplot(df.SDT) +
@@ -592,22 +589,26 @@ plotTAmpPopDynamics <- function(df_SD.list,
         scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
         ggtitle("DEB-GUTS-T") + 
         theme_pubr(legend = "right") +
-        coord_cartesian(ylim = c(0,1500),expand = T) +
+        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
         geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F)
     }
     if(exposure.type=="constant"){
       p1 <- ggplot(df.SD) +
-        geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
                         fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +
-        geom_line(aes(x = as.numeric(format(date,"%j")), y = mean, group = as.factor(exposureConc),
+        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
                       colour = as.factor(exposureConc)),lwd = 1) +
+        geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))), 
+                  inherit.aes = F,col = "black", lwd = 1) +
+        scale_x_date(date_breaks = "months") +
         scale_fill_manual(values = cols) +
         scale_colour_manual(values = cols) +
+        scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) +
         guides(colour = "none",fill = "none",linetype = "none") + 
         xlab("Day of the year") + ylab("Mean population size") +
         ggtitle("DEB-GUTS") + 
-        coord_cartesian(ylim = c(0,1500),expand = T) +
-        theme_pubr()
+        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
+        theme_pubr(x.text.angle = 45)
       
       p2 <- ggplot(df.SDT) +
         geom_ribbon(aes(x = as.numeric(format(date,"%j")), ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
@@ -619,7 +620,7 @@ plotTAmpPopDynamics <- function(df_SD.list,
         scale_fill_manual(values = cols) +
         scale_colour_manual(paste0("Exposure\nconcentration (","\u00B5","g/L)"), values = cols) +
         ggtitle("DEB-GUTS-T") + 
-        coord_cartesian(ylim = c(0,1500),expand = T) +
+        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
         theme_pubr(legend = "right")
     }
     

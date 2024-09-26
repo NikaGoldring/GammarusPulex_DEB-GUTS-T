@@ -1,12 +1,12 @@
-pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/R_4.4.1") # Adjust to your settings
-loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
+pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/win-library/4.4/") # Adjust to your settings
+loadPackages(library.loc = "C:/ProgramData/R/win-library/4.4/", # Adjust to your settings
              required.packages.installed = pks.installed)
 
 ##############################################################
 ############### constant exposures ###########################
 ##############################################################
 ## Read data #################################################
-df_SD <- readData(data.location = "W:/PROJECTS/RA_at_Landscape/BO_GUTS_T_FOCUS", #Adjust to file location
+df_SD <- readData(data.location = "//wurnet.nl/dfs-root/PROJECTS/RA_at_Landscape/BO_GUTS_T_FOCUS", #Adjust to file location
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
                   filter.concentrations = F,
@@ -29,9 +29,9 @@ df_IT <- readData(data.location = "C:/...",
 #SD-constant first year
 p1 <- plotTAmpPopDynamics(df_SD.list = df_SD, 
                           exposure.type = "constant",
-                          desired.exposure.concentrations = F,
+                          desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
-                          time.range = 1992)
+                          time.range = c(1992:1997))
 
 p1$SD + p1$SDT
 
