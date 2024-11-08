@@ -28,9 +28,11 @@ loadPackages <- function(required.packages = c("rlang","tidyverse","scales", "gr
 }
 
 ## Function to read in data that is created from DEB Gammarus with Hans' Smalltalk implementation
+## Applying filter to get the desired subset
 readData <- function(data.location, 
                      guts.model.version,
                      ignore.version,
+                     ignore.chemical = F,
                      filter.concentrations = T, 
                      filter.temp.amplitudes = T,
                      desired.exposure.concentration,
@@ -42,8 +44,9 @@ readData <- function(data.location,
   results.list <- lapply(guts.model.version,function(x){ 
     if(application.pulse.shift){
       c(list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))],
-        list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F)[grepl(x,x = list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F,full.names = F))])}else{
-          list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))]
+        list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F)[grepl(x,x = list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F,full.names = F))])}
+    else{
+        list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))]
         }}) %>% 
     do.call(rbind,.) %>% as.vector()
   
@@ -54,9 +57,15 @@ readData <- function(data.location,
     results.list <- results.list[grepl("verylow",results.list)]
   }
   
+  # Exclude (therefore it's called ignore) the folders of FPF simulations, or IMI simulations.
+  if(ignore.chemical=="FPF"){
+    results.list <- results.list[!grepl(ignore.chemical,results.list)]
+  }else{
+    results.list <- results.list[grepl("FPF",results.list)]
+  }
   
   # Create a data list, looping (with lapply) through all results folders and extracting required information on 
-  # number of individuals over time (mean and sd of five replicates)
+  # number of individuals over time (mean and sd of replicates)
   df <- lapply(results.list,function(x){
     
     # extract information on all scenarios from the .modelscript in a result.list folder

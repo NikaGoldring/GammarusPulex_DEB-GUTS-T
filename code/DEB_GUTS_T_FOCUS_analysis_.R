@@ -1,21 +1,27 @@
-pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/win-library/4.4/") # Adjust to your settings
-loadPackages(library.loc = "C:/ProgramData/R/win-library/4.4/", # Adjust to your settings
+pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/R_4.4.1") # Adjust to your settings
+loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
              required.packages.installed = pks.installed)
 
 ##############################################################
 ############### constant exposures ###########################
 ##############################################################
+
+## Choose T profiles #########################################
+T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_D3ref"   #Adjust to file location 
+T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
+
 ## Read data #################################################
-df_SD <- readData(data.location = "//wurnet.nl/dfs-root/PROJECTS/RA_at_Landscape/BO_GUTS_T_FOCUS", #Adjust to file location
+df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
+                  ignore.chemical = "FPF",
                   filter.concentrations = F,
                   filter.temp.amplitudes = F,
                   desired.exposure.concentration = F,
                   desired.temp.amplitude = 1,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = "C:/...",
+df_IT <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed", 
                   filter.concentrations = F,
@@ -26,7 +32,7 @@ df_IT <- readData(data.location = "C:/...",
 
 
 ## Plot of population dynamics in relation to temp amplitude and selected years
-#SD-constant first year
+#SD-constant 
 p1 <- plotTAmpPopDynamics(df_SD.list = df_SD, 
                           exposure.type = "constant",
                           desired.exposure.concentrations = NULL,
@@ -35,12 +41,12 @@ p1 <- plotTAmpPopDynamics(df_SD.list = df_SD,
 
 p1$SD + p1$SDT
 
-#IT-constant first year (NOTE: code elements still named SD but uses IT data now!, maybe this should be changed at somepoint to avoid confusion)
+#IT-constant (NOTE: code elements still named SD but uses IT data now!, maybe this should be changed at somepoint to avoid confusion)
 p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           exposure.type = "constant",
-                          desired.exposure.concentrations = c(0,0.1,0.2,0.4),
-                          desired.temp.amplitudes = c(1,5,10),
-                          time.range = 1992)
+                          desired.exposure.concentrations = NULL,
+                          desired.temp.amplitudes = F,
+                          time.range = c(1992:1997))
 
 p2$SD + p2$SDT
 
