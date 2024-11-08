@@ -1,9 +1,10 @@
+source("./code/DEB_GUTS_T_FOCUS_functions.R")
 pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/R_4.4.1") # Adjust to your settings
 loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
              required.packages.installed = pks.installed)
 
 ##############################################################
-############### constant exposures ###########################
+############### constant exposures for IMI ###################
 ##############################################################
 
 ## Choose T profiles #########################################
@@ -18,12 +19,13 @@ df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   filter.concentrations = F,
                   filter.temp.amplitudes = F,
                   desired.exposure.concentration = F,
-                  desired.temp.amplitude = 1,
+                  desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
 df_IT <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   guts.model.version = "IT", 
-                  ignore.version = "pulsed", 
+                  ignore.version = "pulsed",
+                  ignore.chemical = "FPF",
                   filter.concentrations = F,
                   filter.temp.amplitudes = F,
                   desired.exposure.concentration = F,
@@ -37,7 +39,8 @@ p1 <- plotTAmpPopDynamics(df_SD.list = df_SD,
                           exposure.type = "constant",
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
-                          time.range = c(1992:1997))
+                          time.range = c(1989:2016)
+                          )
 
 p1$SD + p1$SDT
 
@@ -46,12 +49,14 @@ p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           exposure.type = "constant",
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
-                          time.range = c(1992:1997))
+                          time.range = c(1989:2016)
+                          )
 
 p2$SD + p2$SDT
 
 
 ## Population size at end of the simulation ##################################################################################################################
+# NEEDS ADJUSTMENTS TOO
 df_PopsizeSD <- popSize(simulation.data.list = df_SD,application.pulse.shift = F)
 df_PopsizeIT <- popSize(simulation.data.list = df_IT,application.pulse.shift = F)
 

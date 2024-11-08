@@ -60,8 +60,10 @@ readData <- function(data.location,
   # Exclude (therefore it's called ignore) the folders of FPF simulations, or IMI simulations.
   if(ignore.chemical=="FPF"){
     results.list <- results.list[!grepl(ignore.chemical,results.list)]
+    exposure.chemical <- "IMI"
   }else{
     results.list <- results.list[grepl("FPF",results.list)]
+    exposure.chemical <- ignore.chemical
   }
   
   # Create a data list, looping (with lapply) through all results folders and extracting required information on 
@@ -129,21 +131,22 @@ readData <- function(data.location,
       # some scenarios don't survive the first period, these should only used if >=3 of the replicates survive the first year
       input <- as.matrix(input[,apply(as.matrix(input[(temp.info$`startApplicationYear:` - temp.info$`startYear:`)*365,]),2,FUN = function(x) x>0)])
         
-      # calculate the means and SDs for each of the five replicates
+      # calculate the means and SDs for each of the replicates
       if(application.pulse.shift){
         if(ncol(input)>=3){
           output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
                                           envT = envT$temperature,
                                           scenario.id = y,
-                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1],start = 3,
-                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "Gammarus")[[1]][1])),
+                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
                                           time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],
                                                                                     split = "_")[[1]][5],"t")[[1]][2]))}
         else{
           output.scenario <- data.frame(mean = NA, sd = NA,
                                           envT = envT$temperature,
                                           scenario.id = y,
-                                          model.version = strsplit(x,split = "/")[[1]][8],
+                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
                                           time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][[length(strsplit(x,split = "/")[[1]])]],
                                                                                     split = "_")[[1]][5],"t")[[1]][2]))
         }
@@ -153,13 +156,16 @@ readData <- function(data.location,
           output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
                                           envT = envT$temperature,
                                           scenario.id = y,
-                                          model.version = strsplit(x,split = "/")[[1]][5])} # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
+                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
+                                          exposure.chemical = exposure.chemical)} 
         else{
           output.scenario <- data.frame(mean = NA, sd = NA,
-                                          envT = envT$temperature,
-                                          scenario.id = y,
-                                          model.version = strsplit(x,split = "/")[[1]][5]) # Hard coded file path, needs adjustment  
-        }
+                                        envT = envT$temperature,
+                                        scenario.id = y,
+                                        model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  
+                                        exposure.chemical = exposure.chemical)}
       }
       output.scenario
     })
