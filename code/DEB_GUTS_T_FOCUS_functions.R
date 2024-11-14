@@ -330,7 +330,8 @@ plotTAmpPopDynamics <- function(df_SD.list,
                                 desired.temp.amplitudes,
                                 time.range,
                                 application.pulse.shift = F,
-                                y.trans = F){
+                                y.trans = F,
+                                plot.Tprof = T){
   
   if(application.pulse.shift){
     # full data set
@@ -615,8 +616,8 @@ plotTAmpPopDynamics <- function(df_SD.list,
                           fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
           geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
                         colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
-                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          {if(plot.Tprof)geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                         inherit.aes = F,col = "black", alpha = 0.5, lwd = 1)} +   #line with the environmental temperature
           scale_x_date(date_breaks = "6 months") +
           scale_fill_manual(values = cols) +
           scale_colour_manual(values = cols) +
@@ -632,8 +633,8 @@ plotTAmpPopDynamics <- function(df_SD.list,
                           fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
           geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
                         colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
-                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          {if(plot.Tprof)geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                         inherit.aes = F,col = "black", alpha = 0.5, lwd = 1)} +   #line with the environmental temperature
           scale_x_date(date_breaks = "6 months") +
           scale_fill_manual(values = cols) +
           scale_colour_manual(values = cols) +

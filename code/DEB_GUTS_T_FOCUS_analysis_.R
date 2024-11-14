@@ -12,7 +12,7 @@ T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD
 T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
 
 ## Read data #################################################
-df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
+df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
                   ignore.chemical = "FPF",
@@ -22,7 +22,7 @@ df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
+df_IT <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed",
                   ignore.chemical = "FPF",
@@ -40,7 +40,8 @@ p1 <- plotTAmpPopDynamics(df_SD.list = df_SD,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = "log10"  #"log10" or F
+                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
+                          plot.Tprof = F # switch to plot temp profile or not
                           )
 
 p1$SD + p1$SDT + plot_annotation(title = "SD-IMI")
@@ -51,7 +52,8 @@ p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = F  #"log10" or F
+                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
+                          plot.Tprof = F # switch to plot temp profile or not
                           )
 
 p2$SD + p2$SDT + plot_annotation(title = "IT-IMI")
@@ -65,7 +67,7 @@ T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD
 T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
 
 ## Read data #################################################
-df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
+df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
                   ignore.chemical = "IMI",
@@ -75,7 +77,7 @@ df_SD <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
                   desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = T_Hn2150, #Adjust to  temperature scenario
+df_IT <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed",
                   ignore.chemical = "IMI",
@@ -93,8 +95,9 @@ p3 <- plotTAmpPopDynamics(df_SD.list = df_SD,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = F  #"log10" or F
-)
+                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
+                          plot.Tprof = F # switch to plot temp profile or not
+                          )
 
 p3$SD + p3$SDT + plot_annotation(title = "SD-FPF")
 
@@ -104,8 +107,9 @@ p4 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = F  #"log10" or F
-)
+                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
+                          plot.Tprof = F # switch to plot temp profile or not
+                          )
 
 p4$SD + p4$SDT + plot_annotation(title = "IT-FPF")
 
