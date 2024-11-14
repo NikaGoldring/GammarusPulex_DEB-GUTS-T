@@ -329,7 +329,8 @@ plotTAmpPopDynamics <- function(df_SD.list,
                                 desired.exposure.concentrations,
                                 desired.temp.amplitudes,
                                 time.range,
-                                application.pulse.shift = F){
+                                application.pulse.shift = F,
+                                y.trans = F){
   
   if(application.pulse.shift){
     # full data set
@@ -608,45 +609,82 @@ plotTAmpPopDynamics <- function(df_SD.list,
         geom_vline(xintercept = c(100,120,140,160,180,200),linetype = 6,lwd = 0.5, show.legend = F)
     }
     if(exposure.type=="constant"){
-      p1 <- ggplot(df.SD) + #Plotting the population dynamics of the DEB-GUTS version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))), 
-                  inherit.aes = F,col = "black", lwd = 1) +                               #line with the environmental temperature
-        scale_x_date(date_breaks = "months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS") + 
-        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-      p2 <- ggplot(df.SDT) + #Plotting the population dynamics of the DEB-GUTS-T version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))), 
-                  inherit.aes = F,col = "black", lwd = 1) +                               #line with the environmental temperature
-        scale_x_date(date_breaks = "months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS-T") + 
-        coord_cartesian(ylim = c(0,max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
+      if(y.trans == "log10"){
+        p1 <- ggplot(df.SD) + #Plotting the population dynamics of the DEB-GUTS version
+          geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
+          geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
+                        colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
+          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          scale_x_date(date_breaks = "6 months") +
+          scale_fill_manual(values = cols) +
+          scale_colour_manual(values = cols) +
+          scale_y_continuous(trans = "log10", sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
+          guides(colour = "none",fill = "none",linetype = "none") + 
+          xlab("Day of the year") + ylab("Mean population size") +
+          ggtitle("DEB-GUTS") + 
+          coord_cartesian(ylim = c(min(df.SD$mean,df.SDT$mean), max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
+          theme_pubr(x.text.angle = 45)
+        
+        p2 <- ggplot(df.SDT) + #Plotting the population dynamics of the DEB-GUTS-T version
+          geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
+          geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
+                        colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
+          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          scale_x_date(date_breaks = "6 months") +
+          scale_fill_manual(values = cols) +
+          scale_colour_manual(values = cols) +
+          scale_y_continuous(trans = "log10", sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
+          guides(colour = "none",fill = "none",linetype = "none") + 
+          xlab("Day of the year") + ylab("Mean population size") +
+          ggtitle("DEB-GUTS-T") + 
+          coord_cartesian(ylim = c(min(df.SD$mean,df.SDT$mean), max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
+          theme_pubr(x.text.angle = 45)
+      }
+      else{
+        p1 <- ggplot(df.SD) + #Plotting the population dynamics of the DEB-GUTS version
+          geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
+          geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
+                        colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
+          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          scale_x_date(date_breaks = "6 months") +
+          scale_fill_manual(values = cols) +
+          scale_colour_manual(values = cols) +
+          scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
+          guides(colour = "none",fill = "none",linetype = "none") + 
+          xlab("Day of the year") + ylab("Mean population size") +
+          ggtitle("DEB-GUTS") + 
+          coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
+          theme_pubr(x.text.angle = 45)
+        
+        p2 <- ggplot(df.SDT) + #Plotting the population dynamics of the DEB-GUTS-T version
+          geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
+                          fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
+          geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
+                        colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
+          geom_line(aes(x = date, y = envT * (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT))),
+                    inherit.aes = F,col = "black", alpha = 0.5, lwd = 1) +                               #line with the environmental temperature
+          scale_x_date(date_breaks = "6 months") +
+          scale_fill_manual(values = cols) +
+          scale_colour_manual(values = cols) +
+          scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
+          guides(colour = "none",fill = "none",linetype = "none") + 
+          xlab("Day of the year") + ylab("Mean population size") +
+          ggtitle("DEB-GUTS-T") + 
+          coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
+          theme_pubr(x.text.angle = 45)
+
+      }
     }
-    
-    list(SD = p1, SDT = p2)
+    list(SD = p1, SDT = p2)  
   }
-  
 }
+  
 
 plotPopQuantilesTvsNoT <- function(popsize.data.frame, 
                                    desired.exposure.concentrations,
