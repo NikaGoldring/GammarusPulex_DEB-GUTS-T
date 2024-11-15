@@ -3,16 +3,16 @@ pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/R_4.4.1") # Adjus
 loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
              required.packages.installed = pks.installed)
 
-##############################################################
-############### constant exposures for IMI ###################
-##############################################################
 
-## Choose T profiles #########################################
+## constant exposures for IMI ###################
+
+
+# Choose T profiles #########################################
 T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_D3ref"   #Adjust to file location 
 T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
 
-## Read data #################################################
-df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
+# Read data #################################################
+df_SD <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
                   ignore.chemical = "FPF",
@@ -22,7 +22,7 @@ df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
+df_IT <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed",
                   ignore.chemical = "FPF",
@@ -40,11 +40,13 @@ p1 <- plotTAmpPopDynamics(df_SD.list = df_SD,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
-                          plot.Tprof = F # switch to plot temp profile or not
+                          y.trans = F   #"log10" or F ,  # switch to log transform y axis
                           )
 
-p1$SD + p1$SDT + plot_annotation(title = "SD-IMI")
+p_SD <- p1$p_envT/p1$SD + plot_layout(heights = c(1, 2)) 
+p_SDT <- p1$p_envT/p1$SDT + plot_layout(heights = c(1, 2)) 
+
+(p_SD | p_SDT) + plot_annotation(title = "SD-IMI") 
 
 #IT-constant (NOTE: code elements still named SD but uses IT data now!, maybe this should be changed at somepoint to avoid confusion)
 p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,
@@ -52,22 +54,26 @@ p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
-                          plot.Tprof = F # switch to plot temp profile or not
+                          y.trans = F   #"log10" or F ,  # switch to log transform y axis
                           )
 
-p2$SD + p2$SDT + plot_annotation(title = "IT-IMI")
+p_SD <- p2$p_envT/p2$SD + plot_layout(heights = c(1, 2)) 
+p_SDT <- p2$p_envT/p2$SDT + plot_layout(heights = c(1, 2)) #+ theme(legend.position="right") 
+
+(p_SD | p_SDT) + plot_annotation(title = "IT-IMI") 
+
+
 
 ##############################################################
-############### constant exposures for FPF ###################
-##############################################################
+## constant exposures for FPF ###################
 
-## Choose T profiles #########################################
+
+# Choose T profiles #########################################
 T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_D3ref"   #Adjust to file location 
 T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
 
-## Read data #################################################
-df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
+# Read data #################################################
+df_SD <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
                   ignore.chemical = "IMI",
@@ -77,7 +83,7 @@ df_SD <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
                   desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = T_Hn2150 , #Adjust to  temperature scenario
+df_IT <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed",
                   ignore.chemical = "IMI",
@@ -95,11 +101,14 @@ p3 <- plotTAmpPopDynamics(df_SD.list = df_SD,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
-                          plot.Tprof = F # switch to plot temp profile or not
+                          y.trans = F   #"log10" or F ,  # switch to log transform y axis
                           )
 
-p3$SD + p3$SDT + plot_annotation(title = "SD-FPF")
+p_SD <- p3$p_envT/p3$SD + plot_layout(heights = c(1, 2)) 
+p_SDT <- p3$p_envT/p3$SDT + plot_layout(heights = c(1, 2)) 
+
+(p_SD | p_SDT) + plot_annotation(title = "SD-FPF") 
+
 
 #IT-constant (NOTE: code elements still named SD but uses IT data now!, maybe this should be changed at somepoint to avoid confusion)
 p4 <- plotTAmpPopDynamics(df_SD.list = df_IT,
@@ -107,11 +116,14 @@ p4 <- plotTAmpPopDynamics(df_SD.list = df_IT,
                           desired.exposure.concentrations = NULL,
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
-                          y.trans = "log10",   #"log10" or F ,  # switch to log transform y axis
-                          plot.Tprof = F # switch to plot temp profile or not
+                          y.trans = F   #"log10" or F ,  # switch to log transform y axis
                           )
 
-p4$SD + p4$SDT + plot_annotation(title = "IT-FPF")
+
+p_SD <- p4$p_envT/p4$SD + plot_layout(heights = c(1, 2)) 
+p_SDT <- p4$p_envT/p4$SDT + plot_layout(heights = c(1, 2)) #+ theme(legend.position="right") 
+
+(p_SD | p_SDT) + plot_annotation(title = "IT-FPF") 
 
 
 p3$SD + p4$SDT + plot_annotation(title = "SD vs ITT for FPF")
