@@ -1,9 +1,0 @@
-Component,model-specific,inhabitantClass
-minClutchSize:,14,minimum clutch size [ind]
-backgroundMortality:,0.005,background mortality rate [d-1]
-muDD:,0.000010,density-dependent mortality rate [m2 ind-1 d-1]
-useAgeing:,1,switch DEB aging mortality on (1) or off (0)
-Component,model-specific,landscapeClass
-envTav:,15.0,average temperature parameter of forcing function [oC]
-envTamp:,8.0,amplitude temperature fluctuations parameter [oC]
-envTminShift:,31.0,shift forward of daynr with lowest temperature [d]
