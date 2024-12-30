@@ -8,8 +8,8 @@ loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
 
 
 # Choose T profiles #########################################
-T_D3ref = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_D3ref"   #Adjust to file location 
-T_Hn2150 = "C:/Users/magol001/OneDrive - Wageningen University & Research/Git_AMD/GammarusPulex_DEB-GUTS-T/data/runsOct2024_Hn_2150" #Adjust to file location
+T_D3ref = "./data/runsOct2024_D3ref"   #Adjust to file location 
+T_Hn2150 = "./data/runsOct2024_Hn_2150" #Adjust to file location
 
 # Read data #################################################
 df_SD <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
@@ -37,7 +37,7 @@ df_IT <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
 #SD-constant 
 p1 <- plotTAmpPopDynamics(df_SD.list = df_SD, 
                           exposure.type = "constant",
-                          desired.exposure.concentrations = NULL,
+                          desired.exposure.concentrations = c("0","0.4","0.8","1.2"),
                           desired.temp.amplitudes = F,
                           time.range = c(1989:2016),
                           y.trans = F   #"log10" or F ,  # switch to log transform y axis
@@ -46,7 +46,18 @@ p1 <- plotTAmpPopDynamics(df_SD.list = df_SD,
 p_SD <- p1$p_envT/p1$SD + plot_layout(heights = c(1, 2)) 
 p_SDT <- p1$p_envT/p1$SDT + plot_layout(heights = c(1, 2)) 
 
-(p_SD | p_SDT) + plot_annotation(title = "SD-IMI") 
+(p_SD | p_SDT ) + plot_annotation(title = "SD-IMI") 
+
+#################### Plotting new
+#SD-constant
+p1 <- plotModelComparison(df_SD.list = df_SD, 
+                          desired.exposure.concentrations = NULL, #c("0","0.4","0.8","1.2"), # when including control, don't use 0.0 but only 0, else it doesn't match 
+                          time.range = c(1989:2016)
+                          )
+
+p1
+
+
 
 #IT-constant (NOTE: code elements still named SD but uses IT data now!, maybe this should be changed at somepoint to avoid confusion)
 p2 <- plotTAmpPopDynamics(df_SD.list = df_IT,

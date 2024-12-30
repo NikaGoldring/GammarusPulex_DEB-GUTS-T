@@ -534,28 +534,28 @@ plotTAmpPopDynamics <- function(df_SD.list,
     days.recovery <- seq(as.Date(paste(endApplicationYear + 1,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
     days.full.period <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
     
-    df.SD <- lapply(1:nrow(scens),function(x){
+    df.SD <- lapply(1:length(scens),function(x){
       out <- df.SD[[x]]
       if(!nrow(out)==1){
         out$date <- days.full.period
         out <- out[out$date %in% days.application,]
-        out$exposureConc <- scens$exposureConcentration[x]
+        out$exposureConc <- scens[x]
       }
       else{
         out$date <- NA
-        out$exposureConc <- scens$exposureConcentration[x]
+        out$exposureConc <- scens[x]
       }
       out}) %>% do.call(rbind,.)
-    df.SDT <- lapply(1:nrow(scens),function(x){
+    df.SDT <- lapply(1:length(scens),function(x){
       out <- df.SDT[[x]]
       if(!nrow(out)==1){
         out$date <- days.full.period
         out <- out[out$date %in% days.application,]
-        out$exposureConc <- scens$exposureConcentration[x]
+        out$exposureConc <- scens[x]
       }
       else{
         out$date <- NA
-        out$exposureConc <- scens$exposureConcentration[x]
+        out$exposureConc <- scens[x]
       }
       out}) %>% do.call(rbind,.)
     
@@ -690,12 +690,9 @@ plotTAmpPopDynamics <- function(df_SD.list,
 
 # New function for figures that compare the model simulations of GUTS,our current GUTS-T and the GUTS-T-Std   
 plotModelComparison <- function(df_SD.list,
-                                exposure.type,
                                 desired.exposure.concentrations,
-                                desired.temp.amplitudes,
-                                time.range,
-                                application.pulse.shift = F,
-                                y.trans = F){
+                                time.range
+                                ){
   
   ## Prepare df 
   # full data set
@@ -719,9 +716,14 @@ plotModelComparison <- function(df_SD.list,
     scens <- scens[select.scens, , drop = FALSE]}else{select.scens <- rep(T,length(scens$exposureConcentration))}
   
   # select all dataframes matching the desired concentrations by matching multiple string patterns
+  # Filter for exposure scenarios
   df.SD <- df[[1]]$data[select.scens]
   df.SDT <- df[[2]]$data[select.scens]
   df.SDTStd <- df[[3]]$data[select.scens]
+  
+  # # Get model types in df.list
+  # df_temp <- lapply(1:length(df),function(x) df[[x]]$data[select.scens][[1]])
+  # types <- lapply(df_temp, function(x) unique(x$model.version)) %>% do.call(rbind,.)
   
   # select only application window data and add scenario info  
   ## Note: this seems trivial, but sadly isn't....
@@ -737,14 +739,8 @@ plotModelComparison <- function(df_SD.list,
   days.application <- seq(as.Date(paste(startApplicationYear,"/1/1",sep = "")),as.Date(paste(endApplicationYear,"/12/31",sep = "")),"days")
   days.recovery <- seq(as.Date(paste(endApplicationYear + 1,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
   days.full.period <- seq(as.Date(paste(startYear,"/1/1",sep = "")),as.Date(paste(endYear,"/12/31",sep = "")),"days")
-  
-  
-  ####################################################### Here I didn't quite understand the code yet 
-  # Get model types oin df.list
-  df_temp <- lapply(1:length(df),function(x) df[[x]]$data[select.scens][[1]])
-  types <- lapply(df_temp, function(x) unique(x$model.version)) %>% do.call(rbind,.)
-  
-  df.SD <- lapply(which(types == "SD"),function(x){
+  # apply to each model type
+  df.SD <- lapply(1:nrow(scens),function(x){
     out <- df.SD[[x]]
     if(!nrow(out)==1){
       out$date <- days.full.period
@@ -757,7 +753,7 @@ plotModelComparison <- function(df_SD.list,
     }
     out}) %>% do.call(rbind,.)
   
-  df.SDT <- lapply(which(types == "SDT"),function(x){
+  df.SDT <- lapply(1:nrow(scens),function(x){
     out <- df.SDT[[x]]
     if(!nrow(out)==1){
       out$date <- days.full.period
@@ -770,7 +766,7 @@ plotModelComparison <- function(df_SD.list,
     }
     out}) %>% do.call(rbind,.)
   
-  df.SDTStd <- lapply(which(types == "SDTStd"),function(x){
+  df.SDTStd <- lapply(1:nrow(scens),function(x){
     out <- df.SDTStd[[x]]
     if(!nrow(out)==1){
       out$date <- days.full.period
@@ -795,121 +791,25 @@ plotModelComparison <- function(df_SD.list,
   df.SDTStd$year <- format(df.SDTStd$date,"%Y")
   
   # Plotting ############################################################################################ adjust to get plot as in paper draft 
-  # create a colour scale for the exposure concentrations
-  cols <- grDevices::colorRampPalette(colors = c("forestgreen","red"))
-  ncols <- ifelse(is.null(desired.exposure.concentrations),length(select.scens),length(desired.exposure.concentrations))
-  cols <- cols(ncols)
+  # Combine all data into a single data frame
+  combined_df <- bind_rows(df.SD, df.SDT, df.SDTStd)
   
-  if(exposure.type=="constant"){
-    if(y.trans == "log10"){
-      #### Adjust: This should be a plot of the control, the first conc level of SD and SDT (so three lines) in one figure so p1 and p2 in one 
-      p1 <- ggplot(df.SD) + #Plotting the population dynamics of the DEB-GUTS version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        scale_y_continuous(trans = "log10") +
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS") + 
-        coord_cartesian(ylim = c(min(df.SD$mean,df.SDT$mean), max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-      p2 <- ggplot(df.SDT) + #Plotting the population dynamics of the DEB-GUTS-T version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        scale_y_continuous(trans = "log10")+
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS-T") + 
-        coord_cartesian(ylim = c(min(df.SD$mean,df.SDT$mean), max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-      p3 <- ggplot(df.SDTStd) + #Plotting the population dynamics of the DEB-GUTS-T version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = F) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        scale_y_continuous(trans = "log10")+
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS-T-Std") + 
-        coord_cartesian(ylim = c(min(df.SD$mean,df.SDTStd$mean), max(df.SD$mean,df.SDTStd$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-    }
-    else{
-      p1 <- ggplot(df.SD) + #Plotting the population dynamics of the DEB-GUTS version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = T) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        # scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
-        guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS") + 
-        coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-      p2 <- ggplot(df.SDT) + #Plotting the population dynamics of the DEB-GUTS-T version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = T) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        # scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
-        #guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS-T") + 
-        theme(legend.position = "right") +
-        coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-      p3 <- ggplot(df.SDTStd) + #Plotting the population dynamics of the DEB-GUTS-T version
-        geom_ribbon(aes(x = date, ymin = mean - sd,ymax = mean + sd, group = as.factor(exposureConc),
-                        fill = as.factor(exposureConc)),alpha = 0.25, show.legend = T) +  #color the area of uncertainty
-        geom_line(aes(x = date, y = mean, group = as.factor(exposureConc),
-                      colour = as.factor(exposureConc)),lwd = 1) +                        #line with the mean of the simulations
-        scale_x_date(date_breaks = "6 months") +
-        scale_fill_manual(values = cols) +
-        scale_colour_manual(values = cols) +
-        # scale_y_continuous(sec.axis = sec_axis(~ . / (max(df.SD$mean,df.SDT$mean) / max(df.SD$envT)), name = "Temperature (Celsius)")) + #second y axis for temperature profile
-        #guides(colour = "none",fill = "none",linetype = "none") + 
-        xlab("Day of the year") + ylab("Mean population size") +
-        ggtitle("DEB-GUTS-T-Std") + 
-        theme(legend.position = "right") +
-        coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDTStd$mean)*1.1),expand = T) +
-        theme_pubr(x.text.angle = 45)
-      
-    }
-  }
-  
-  # Plot for environmental temperature
-  p4 <- ggplot(df.SD) +
-    geom_line(aes(x = date, y = envT), colour = "black", lwd = 1) +
-    scale_x_date(date_breaks = "6 months",  date_labels = "") +
-    xlab("") +  # Remove x-axis label for the top plot
-    ylab("Temperature (Celsius)") +
-    theme(panel.background = element_blank(), axis.line = element_line(colour = "black"), axis.text.x=element_blank())+
-    ggtitle("Environmental Temperature")
-  
-  
-  list(SD = p1, SDT = p2, SDTStd = p3, p_envT= p4)
+  # Plot the data for all model types per exposure concentration
+  p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
+    geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
+                alpha = 0.25, color = NA, show.legend = F) +
+    geom_line(linewidth = 1) +
+    facet_wrap(~ exposureConc, scales = "free_y") + # Facet by exposure concentration
+    labs(title = "Model Comparisons",
+         x = "Date",
+         y = "Mean",
+         color = "Model Version"
+        ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom"
+        )
+  #list(p1)
 } 
 
 
