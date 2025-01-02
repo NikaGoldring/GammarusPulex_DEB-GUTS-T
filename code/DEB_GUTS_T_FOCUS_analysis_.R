@@ -4,33 +4,53 @@ loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
              required.packages.installed = pks.installed)
 
 
-## constant exposures for IMI ###################
-
+## constant exposures ###################
 
 # Choose T profiles #########################################
 T_D3ref = "./data/runsOct2024_D3ref"   #Adjust to file location 
-T_Hn2150 = "./data/runsOct2024_Hn_2150" #Adjust to file location
-
 # Read data #################################################
-df_SD <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
+df_SD_D3 <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "SD", 
                   ignore.version = "pulsed", 
-                  ignore.chemical = "FPF",
+                  ignore.chemical = "IMI",
                   filter.concentrations = F,
                   filter.temp.amplitudes = F,
                   desired.exposure.concentration = F,
                   desired.temp.amplitude = F,
                   application.pulse.shift = F)
 
-df_IT <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
+df_IT_D3 <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
                   guts.model.version = "IT", 
                   ignore.version = "pulsed",
-                  ignore.chemical = "FPF",
+                  ignore.chemical = "IMI",
                   filter.concentrations = F,
                   filter.temp.amplitudes = F,
                   desired.exposure.concentration = F,
                   desired.temp.amplitude = 1, 
                   application.pulse.shift = F)
+
+# Choose T profiles #########################################
+T_Hn2150 = "./data/runsOct2024_Hn_2150" #Adjust to file location
+# Read data #################################################
+df_SD_Hn <- readData(data.location = T_Hn2150 , 
+                     guts.model.version = "SD", 
+                     ignore.version = "pulsed", 
+                     ignore.chemical = "IMI",
+                     filter.concentrations = F,
+                     filter.temp.amplitudes = F,
+                     desired.exposure.concentration = F,
+                     desired.temp.amplitude = F,
+                     application.pulse.shift = F)
+
+df_IT_Hn <- readData(data.location = T_Hn2150 , 
+                     guts.model.version = "IT", 
+                     ignore.version = "pulsed",
+                     ignore.chemical = "IMI",
+                     filter.concentrations = F,
+                     filter.temp.amplitudes = F,
+                     desired.exposure.concentration = F,
+                     desired.temp.amplitude = 1, 
+                     application.pulse.shift = F)
 
 
 ## Plot of population dynamics in relation to temp amplitude and selected years
@@ -51,11 +71,19 @@ p_SDT <- p1$p_envT/p1$SDT + plot_layout(heights = c(1, 2))
 #################### Plotting new
 #SD-constant
 p1 <- plotModelComparison(df_SD.list = df_SD, 
-                          desired.exposure.concentrations = NULL, #c("0","0.4","0.8","1.2"), # when including control, don't use 0.0 but only 0, else it doesn't match 
+                          desired.exposure.concentrations =  c("0","0.4","0.8","1.2"), # when including control, don't use 0.0 but only 0, else it doesn't match 
                           time.range = c(1989:2016)
                           )
-
 p1
+
+
+p1 <- plotScenarioComparison(df_D3ref.list = df_SD_D3, 
+                             df_Hn2150.list = df_SD_Hn,
+                             desired.exposure.concentration = c("0","0.4","0.8","1.2"), # when including control, don't use 0.0 but only 0, else it doesn't match 
+                             time.range = c(1989:2016))
+p1
+
+
 
 
 

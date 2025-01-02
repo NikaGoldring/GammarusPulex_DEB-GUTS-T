@@ -63,7 +63,7 @@ readData <- function(data.location,
     exposure.chemical <- "IMI"
   }else{
     results.list <- results.list[grepl("FPF",results.list)]
-    exposure.chemical <- ignore.chemical
+    exposure.chemical <- "FPF"
   }
   
   # Create a data list, looping (with lapply) through all results folders and extracting required information on 
@@ -158,14 +158,18 @@ readData <- function(data.location,
                                           scenario.id = y,
                                           model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
                                                                  stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
-                                          exposure.chemical = exposure.chemical)} 
+                                          exposure.chemical = exposure.chemical,
+                                          T.scenario = sub(".*_", "", data.location) # get T.sceanrio from data.location string
+                                        )} 
         else{
           output.scenario <- data.frame(mean = NA, sd = NA,
                                         envT = envT$temperature,
                                         scenario.id = y,
                                         model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
                                                                  stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  
-                                        exposure.chemical = exposure.chemical)}
+                                        exposure.chemical = exposure.chemical,
+                                        T.scenario = sub(".*_", "", data.location) # get T.sceanrio from data.location string
+                                        )}
       }
       output.scenario
     })
@@ -176,6 +180,115 @@ readData <- function(data.location,
   return(df)
 }
 
+## Helper function to extract and filter scenarios
+extract_and_filter_scenarios <- function(df.list, 
+                                         desired.exposure.concentration){
+  scens <- as.matrix(df.list[[1]]$scenarios$V1)
+  scens <- apply(scens, 1, function(z) {
+    as.numeric(
+      substr(
+        unlist(strsplit(z, " "))[8], # Adjust index based on input structure
+        start = 1,
+        stop = nchar(unlist(strsplit(z, " "))[8]) - 1
+      )
+    )
+  })
+  scens <- data.frame(exposureConcentration = scens)
+  
+  # Change scens to applied filter 
+  if (!is.null(desired.exposure.concentration)) {
+    select.scens <- scens$exposureConcentration %in% desired.exposure.concentration
+    scens <- scens[select.scens, , drop = FALSE]
+  }
+return(list(scens=scens, select.scens = select.scens)) #Returns all or selected scens as df and select.scen as logi for filtering
+}
+
+## Helper function to process a list of data frames
+process_model_data <- function(df.list, 
+                               desired.exposure.concentration, 
+                               time.range) {
+
+  ## Get scenario info to define application window
+  startYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "startYear:"]
+  endYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "endYear:"]
+  startApplicationYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "startApplicationYear:"]
+  endApplicationYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "endApplicationYear:"]
+  
+  days.application <- seq(as.Date(paste(startApplicationYear, "/1/1", sep = "")),
+                          as.Date(paste(endApplicationYear, "/12/31", sep = "")), "days")
+  days.full.period <- seq(as.Date(paste(startYear, "/1/1", sep = "")),
+                          as.Date(paste(endYear, "/12/31", sep = "")), "days")
+  
+  ## Prepare df for each model version to apply filters 
+  # Get filtered scenario infos
+  filtered <- extract_and_filter_scenarios(df.list, desired.exposure.concentration)
+  scens <- filtered$scens
+  select.scens <-filtered$select.scens
+  
+  # Individual filtered data frames
+  df.SD <- df.list[[1]]$data[select.scens]
+  df.SDT <- df.list[[2]]$data[select.scens]
+  df.SDTStd <- df.list[[3]]$data[select.scens]
+  
+  ##Select data of filtered df within application window only
+  df.SD <- lapply(1:nrow(scens),function(x){
+    out <- df.SD[[x]]
+    if(!nrow(out)==1){
+      
+      out$date <- days.full.period
+      out <- out[out$date %in% days.application,]
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    else{
+      out$date <- NA
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    out}) %>% do.call(rbind,.)
+  
+  df.SDT <- lapply(1:nrow(scens),function(x){
+    out <- df.SDT[[x]]
+    if(!nrow(out)==1){
+      out$date <- days.full.period
+      out <- out[out$date %in% days.application,]
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    else{
+      out$date <- NA
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    out}) %>% do.call(rbind,.)
+  
+  df.SDTStd <- lapply(1:nrow(scens),function(x){
+    out <- df.SDTStd[[x]]
+    if(!nrow(out)==1){
+      out$date <- days.full.period
+      out <- out[out$date %in% days.application,]
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    else{
+      out$date <- NA
+      out$exposureConc <- scens$exposureConcentration[x]
+    }
+    out}) %>% do.call(rbind,.)
+  
+  ##Finally get data within defined time range only
+  h <- as.numeric(time.range)
+  # if(!grepl(",",h)){
+  #   h <- as.numeric(h)}else{
+  #     h <- as.numeric(unlist(strsplit(h,",")))
+  #   }
+  
+  df.SD <- df.SD[format(df.SD$date,"%Y") %in% h,]
+  df.SD$year <- format(df.SD$date,"%Y")
+  
+  df.SDT <- df.SDT[format(df.SDT$date,"%Y") %in% h,]
+  df.SDT$year <- format(df.SDT$date,"%Y")
+  
+  df.SDTStd <- df.SDTStd[format(df.SDTStd$date,"%Y") %in% h,]
+  df.SDTStd$year <- format(df.SDTStd$date,"%Y")
+
+  return(list(SD = df.SD, SDT= df.SDT, SDTStd = df.SDTStd)) ##Returns filtered dfs
+}
 
 ## Function to get population size at the end of the scenarios, as well as quantile information
 popSize <- function (simulation.data.list, application.pulse.shift=F){
@@ -794,13 +907,19 @@ plotModelComparison <- function(df_SD.list,
   # Combine all data into a single data frame
   combined_df <- bind_rows(df.SD, df.SDT, df.SDTStd)
   
+  # Create a dynamic title
+  model_versions <- unique(combined_df$model.version)
+  esposure_chemical <- unique(combined_df$exposure.chemical)
+  dynamic_title <- paste("Model Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
+  
+  
   # Plot the data for all model types per exposure concentration
   p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
     geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
                 alpha = 0.25, color = NA, show.legend = F) +
-    geom_line(linewidth = 1) +
+    geom_line() +
     facet_wrap(~ exposureConc, scales = "free_y") + # Facet by exposure concentration
-    labs(title = "Model Comparisons",
+    labs(title = dynamic_title,
          x = "Date",
          y = "Mean",
          color = "Model Version"
@@ -813,7 +932,45 @@ plotModelComparison <- function(df_SD.list,
 } 
 
 
+plotScenarioComparison <- function(df_D3ref.list, 
+                                   df_Hn2150.list,
+                                   desired.exposure.concentration,
+                                   time.range){ 
+  
+  ## Prepare combined df 
+  df_D3ref <- process_model_data(df_D3ref.list, desired.exposure.concentration, time.range)
+  df_Hn2150 <- process_model_data(df_Hn2150.list, desired.exposure.concentration, time.range)
+  
+  combined_df <- bind_rows(df_D3ref$SD,     df_Hn2150$SD,
+                           df_D3ref$SDT,    df_Hn2150$SDT,
+                           df_D3ref$SDTStd, df_Hn2150$SDTstd)
+  
+  # Plotting ############################################################################################ 
+  # Create a dynamic title
+  model_versions <- unique(combined_df$model.version)
+  esposure_chemical <- unique(combined_df$exposure.chemical)
+  T_scenarios <- unique(combined_df$T.scenario)
+  dynamic_title <- paste("Model Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
+  
+  
+  # Plot the data for all model types per exposure concentration
+  p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
+    geom_line() +
+    geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
+                alpha = 0.25, color = NA, show.legend = F) +
+    facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios)) + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+    labs(title = dynamic_title,
+         x = "Date",
+         y = "Mean",
+         color = "Model Version"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom",
+          panel.spacing = unit(1, "lines")
+    )
 
+}
 
 
 plotPopQuantilesTvsNoT <- function(popsize.data.frame, 
