@@ -918,7 +918,7 @@ plotModelComparison <- function(df_SD.list,
     geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
                 alpha = 0.25, color = NA, show.legend = F) +
     geom_line() +
-    facet_wrap(~ exposureConc, scales = "free_y") + # Facet by exposure concentration
+    facet_wrap(~ exposureConc, ncol = 1) + # Facet by exposure concentration
     labs(title = dynamic_title,
          x = "Date",
          y = "Mean",
@@ -934,6 +934,7 @@ plotModelComparison <- function(df_SD.list,
 
 plotScenarioComparison <- function(df_D3ref.list, 
                                    df_Hn2150.list,
+                                   relative_diff,
                                    desired.exposure.concentration,
                                    time.range){ 
   
@@ -941,9 +942,32 @@ plotScenarioComparison <- function(df_D3ref.list,
   df_D3ref <- process_model_data(df_D3ref.list, desired.exposure.concentration, time.range)
   df_Hn2150 <- process_model_data(df_Hn2150.list, desired.exposure.concentration, time.range)
   
+  #Also relative differences, easier to do here instead of after the combining
+  df_D3ref$SD$mean_rel      <- df_D3ref$SD$mean      / df_D3ref$SD$mean
+  df_D3ref$SD$sd_rel        <- df_D3ref$SD$sd        / df_D3ref$SD$sd # not sure if this correct!
+
+  df_D3ref$SDT$mean_rel     <- df_D3ref$SDT$mean     / df_D3ref$SD$mean
+  df_D3ref$SDT$sd_rel       <- df_D3ref$SDT$sd       / df_D3ref$SD$sd
+
+  df_D3ref$SDTStd$mean_rel  <- df_D3ref$SDTStd$mean  / df_D3ref$SD$mean
+  df_D3ref$SDTStd$sd_rel    <- df_D3ref$SDTStd$sd    / df_D3ref$SD$sd
+
+  df_Hn2150$SD$mean_rel     <- df_Hn2150$SD$mean     / df_Hn2150$SD$mean
+  df_Hn2150$SD$sd_rel       <- df_Hn2150$SD$sd       / df_Hn2150$SD$sd # not sure if this correct!
+
+  df_Hn2150$SDT$mean_rel    <- df_Hn2150$SDT$mean    / df_Hn2150$SD$mean
+  df_Hn2150$SDT$sd_rel      <- df_Hn2150$SDT$sd      / df_Hn2150$SD$sd
+
+  df_Hn2150$SDTStd$mean_rel <- df_Hn2150$SDTStd$mean / df_Hn2150$SD$mean
+  df_Hn2150$SDTStd$sd_rel   <- df_Hn2150$SDTStd$sd   / df_Hn2150$SD$sd
+  
+  # Combine df for plotting
   combined_df <- bind_rows(df_D3ref$SD,     df_Hn2150$SD,
                            df_D3ref$SDT,    df_Hn2150$SDT,
-                           df_D3ref$SDTStd, df_Hn2150$SDTstd)
+                           df_D3ref$SDTStd, df_Hn2150$SDTStd)
+
+  
+  
   
   # Plotting ############################################################################################ 
   # Create a dynamic title
@@ -954,22 +978,41 @@ plotScenarioComparison <- function(df_D3ref.list,
   
   
   # Plot the data for all model types per exposure concentration
-  p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
-    geom_line() +
-    geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
-                alpha = 0.25, color = NA, show.legend = F) +
-    facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios)) + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
-    labs(title = dynamic_title,
-         x = "Date",
-         y = "Mean",
-         color = "Model Version"
-    ) +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          legend.position = "bottom",
-          panel.spacing = unit(1, "lines")
-    )
-
+  if (relative_diff == F) { #Plotting absolute values 
+    p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
+      geom_line() +
+      geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
+                  alpha = 0.25, color = NA, show.legend = F) +
+      facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios)) + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+      labs(title = dynamic_title,
+           x = "Date",
+           y = "Mean",
+           color = "Model Version"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "bottom",
+            panel.spacing = unit(1, "lines")
+      )
+  }else{ #Plotting relative to control 
+    p1 <- ggplot(combined_df, aes(x = date, y = mean_rel, color = model.version)) +
+      geom_line() +
+      geom_ribbon(aes(ymin = mean_rel - sd_rel, ymax = mean_rel + sd_rel, fill = model.version), #SD shade behind line
+                  alpha = 0.25, color = NA, show.legend = F) +
+      facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios), scales = "free_y") + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+      geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # Horizontal line at y = 1 (control baseline)      
+      labs(title = dynamic_title,
+           x = "Date",
+           y = "Relative difference",
+           color = "Model Version"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "bottom",
+            panel.spacing = unit(1, "lines")
+      )
+  }
+  
 }
 
 
