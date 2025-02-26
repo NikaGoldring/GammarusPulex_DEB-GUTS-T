@@ -936,6 +936,7 @@ plotScenarioComparison <- function(df_D3ref.list,
                                    df_Hn2150.list,
                                    relative_diff,
                                    desired.exposure.concentration,
+                                   compare_models,
                                    time.range){ 
   
   ## Prepare combined df 
@@ -944,22 +945,28 @@ plotScenarioComparison <- function(df_D3ref.list,
   
   #Also relative differences, easier to do here instead of after the combining
   df_D3ref$SD$mean_rel      <- df_D3ref$SD$mean      / df_D3ref$SD$mean
-  df_D3ref$SD$sd_rel        <- df_D3ref$SD$sd        / df_D3ref$SD$sd # not sure if this correct!
+  df_D3ref$SD$CV            <- (df_D3ref$SD$sd        / df_D3ref$SD$mean) * 100
+  df_D3ref$SD$CV_rel        <- df_D3ref$SD$CV        / df_D3ref$SD$CV
 
   df_D3ref$SDT$mean_rel     <- df_D3ref$SDT$mean     / df_D3ref$SD$mean
-  df_D3ref$SDT$sd_rel       <- df_D3ref$SDT$sd       / df_D3ref$SD$sd
+  df_D3ref$SDT$CV           <- (df_D3ref$SDT$sd       / df_D3ref$SDT$mean) *100
+  df_D3ref$SDT$CV_rel       <- df_D3ref$SDT$CV       / df_D3ref$SD$CV
 
   df_D3ref$SDTStd$mean_rel  <- df_D3ref$SDTStd$mean  / df_D3ref$SD$mean
-  df_D3ref$SDTStd$sd_rel    <- df_D3ref$SDTStd$sd    / df_D3ref$SD$sd
-
+  df_D3ref$SDTStd$CV        <- (df_D3ref$SDTStd$sd    / df_D3ref$SDTStd$mean) *100
+  df_D3ref$SDTStd$CV_rel    <- df_D3ref$SDTStd$CV    / df_D3ref$SD$CV
+########
   df_Hn2150$SD$mean_rel     <- df_Hn2150$SD$mean     / df_Hn2150$SD$mean
-  df_Hn2150$SD$sd_rel       <- df_Hn2150$SD$sd       / df_Hn2150$SD$sd # not sure if this correct!
+  df_Hn2150$SD$CV           <- (df_Hn2150$SD$sd       / df_Hn2150$SD$mean) *100
+  df_Hn2150$SD$CV_rel       <- df_Hn2150$SD$CV       / df_Hn2150$SD$CV 
 
   df_Hn2150$SDT$mean_rel    <- df_Hn2150$SDT$mean    / df_Hn2150$SD$mean
-  df_Hn2150$SDT$sd_rel      <- df_Hn2150$SDT$sd      / df_Hn2150$SD$sd
+  df_Hn2150$SDT$CV          <- (df_Hn2150$SDT$sd      / df_Hn2150$SDT$mean) *100
+  df_Hn2150$SDT$CV_rel      <- df_Hn2150$SDT$CV      / df_Hn2150$SD$CV
 
   df_Hn2150$SDTStd$mean_rel <- df_Hn2150$SDTStd$mean / df_Hn2150$SD$mean
-  df_Hn2150$SDTStd$sd_rel   <- df_Hn2150$SDTStd$sd   / df_Hn2150$SD$sd
+  df_Hn2150$SDTStd$CV       <- (df_Hn2150$SDTStd$sd   / df_Hn2150$SDTStd$mean) *100
+  df_Hn2150$SDTStd$CV_rel   <- df_Hn2150$SDTStd$CV   / df_Hn2150$SD$CV
   
   # Combine df for plotting
   combined_df <- bind_rows(df_D3ref$SD,     df_Hn2150$SD,
@@ -974,46 +981,120 @@ plotScenarioComparison <- function(df_D3ref.list,
   model_versions <- unique(combined_df$model.version)
   esposure_chemical <- unique(combined_df$exposure.chemical)
   T_scenarios <- unique(combined_df$T.scenario)
-  dynamic_title <- paste("Model Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
+  dynamic_title <- paste("Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
   
+  # create a colour scale for the exposure concentrations
+  cols <- grDevices::colorRampPalette(colors = c("green","orange", "red"))# terrain.colors(10))
+  cols_conc <- cols(length(unique(combined_df$exposureConc)))
   
   # Plot the data for all model types per exposure concentration
   if (relative_diff == F) { #Plotting absolute values 
-    p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
-      geom_line() +
-      geom_ribbon(aes(ymin = mean - sd, ymax = mean + sd, fill = model.version), #SD shade behind line
-                  alpha = 0.25, color = NA, show.legend = F) +
-      facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios)) + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
-      labs(title = dynamic_title,
-           x = "Date",
-           y = "Mean",
-           color = "Model Version"
-      ) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            legend.position = "bottom",
-            panel.spacing = unit(1, "lines")
-      )
+    if (compare_models == T) { #Plotting each concentration level seperatly to show different model results per conc. level
+      p1 <- ggplot(combined_df, aes(x = date, y = mean, color = model.version)) +
+        geom_line() +
+        geom_ribbon(aes(ymin = mean - CV, ymax = mean + CV, fill = model.version), # sd shade behind line ####Change to CV? will be very small
+                    alpha = 0.25, color = NA, show.legend = F) +
+        facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios)) + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+        labs(title = paste("Model ", dynamic_title),
+             x = "Date",
+             y = "Mean",
+             color = "Model Version"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "bottom",
+              panel.spacing = unit(1, "lines")
+        )
+    }else{# Plotting each model version seperatly and keep conc. levels in one plot 
+      #df = dplyr::filter(combined_df, model.version == "SDT") # Plotting only GUTS-T and keep conc. levels in one plot 
+      p1 <- ggplot(combined_df, aes(x = date, y = mean, color = factor(exposureConc))) +
+        geom_line() +
+        geom_ribbon(aes(ymin = mean - CV, ymax = mean + CV, group = factor(exposureConc), fill = factor(exposureConc)), # sd shade behind line 
+                    alpha = 0.25, color = NA, show.legend = F) +
+        scale_fill_manual(values = cols_conc) +
+        scale_colour_manual(values = cols_conc) + 
+        facet_grid(model.version ~ factor(T.scenario, levels = T_scenarios)) + # Facet by model.version and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+        labs(title = paste("Scenario ", dynamic_title),
+             x = "Date",
+             y = "Mean",
+             color = "Exposure Concentration"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "bottom",
+              panel.spacing = unit(1, "lines")
+        )
+      
+    }
+    
   }else{ #Plotting relative to control 
-    p1 <- ggplot(combined_df, aes(x = date, y = mean_rel, color = model.version)) +
-      geom_line() +
-      geom_ribbon(aes(ymin = mean_rel - sd_rel, ymax = mean_rel + sd_rel, fill = model.version), #SD shade behind line
-                  alpha = 0.25, color = NA, show.legend = F) +
-      facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios), scales = "free_y") + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
-      geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # Horizontal line at y = 1 (control baseline)      
-      labs(title = dynamic_title,
-           x = "Date",
-           y = "Relative difference",
-           color = "Model Version"
-      ) +
-      theme_minimal() +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1),
-            legend.position = "bottom",
-            panel.spacing = unit(1, "lines")
-      )
+    if (compare_models == T) { #Plotting each concentration level seperatly to show different model results per conc. level
+      p1 <- ggplot(combined_df, aes(x = date, y = mean_rel, color = model.version)) +
+        geom_line() +
+        geom_ribbon(aes(ymin = mean_rel - CV_rel, ymax = mean_rel + CV_rel, fill = model.version), # CV shade behind line
+                    alpha = 0.25, color = NA, show.legend = F) +
+        facet_grid(exposureConc ~ factor(T.scenario, levels = T_scenarios), scales = "free_y") + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+        geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # Horizontal line at y = 1 (control baseline)      
+        labs(title = paste("Model ", dynamic_title),
+             x = "Date",
+             y = "Relative difference",
+             color = "Model Version"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "bottom",
+              panel.spacing = unit(1, "lines")
+        )
+    }else {# Plotting each model version seperatly and keep conc. levels in one plot 
+      p1 <- ggplot(combined_df, aes(x = date, y = mean_rel, color = factor(exposureConc))) +
+        geom_line() +
+        geom_ribbon(aes(ymin = mean_rel - CV_rel, ymax = mean_rel + CV_rel, group = factor(exposureConc), fill = factor(exposureConc)), # CV shade behind line
+                    alpha = 0.25, color = NA, show.legend = F) +
+        facet_grid(model.version ~ factor(T.scenario, levels = T_scenarios), scales = "free_y") + # Facet by exposure concentration and T.scenario (the factor argument is just to ensure that D3 scenario is left of plot)
+        geom_hline(yintercept = 1, linetype = "dashed", color = "gray") +  # Horizontal line at y = 1 (control baseline)  
+        scale_fill_manual(values = cols_conc) +
+        scale_colour_manual(values = cols_conc) + 
+        labs(title = paste("Scenario ", dynamic_title),
+             x = "Date",
+             y = "Relative difference",
+             color = "Model Version"
+        ) +
+        theme_minimal() +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1),
+              legend.position = "bottom",
+              panel.spacing = unit(1, "lines")
+        )
+    }
+    
   }
-  
+  # ## Plots for environmental temperatures
+  # # Plot for D3ref version
+  # p2_D3ref <- ggplot(combined_df[combined_df$model.version == "D3ref", ]) +
+  #   geom_line(aes(x = date, y = envT), colour = "black", lwd = 1) +
+  #   scale_x_date(date_breaks = "6 months",  date_labels = "") +
+  #   #xlab("") + # Remove x-axis label for the top plot 
+  #   ylab("Temperature (Celsius)") +
+  #   theme(panel.background = element_blank(), 
+  #         axis.line = element_line(colour = "black"), 
+  #         axis.text.x = element_blank()) +
+  #   ggtitle("Environmental Temperature - D3ref")
+  # 
+  # # Plot for 2150 version
+  # p2_2150 <- ggplot(combined_df[combined_df$model.version == "2150", ]) +
+  #   geom_line(aes(x = date, y = envT), colour = "black", lwd = 1) +
+  #   scale_x_date(date_breaks = "6 months",  date_labels = "") +
+  #   xlab("") +  
+  #   ylab("Temperature (Celsius)") +
+  #   theme(panel.background = element_blank(), 
+  #         axis.line = element_line(colour = "black"), 
+  #         axis.text.x = element_blank()) +
+  #   ggtitle("Environmental Temperature - 2150")
 }
+
+
+
+
+
 
 
 plotPopQuantilesTvsNoT <- function(popsize.data.frame, 
@@ -1106,3 +1187,146 @@ plotPopQuantilesTvsNoT <- function(popsize.data.frame,
 }
 
 
+plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.15, method) {
+  # Create a dynamic title
+  model_versions <- unique(df$model.version)
+  esposure_chemical <- unique(df$exposure.chemical)
+  dynamic_title <- paste("Model Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
+
+  
+  # Calculate temperature correction factor and corrected parameters
+  if (method == "SDT" ) {
+    # SDT 
+    dates = df$SDT$date 
+    envT = df$SDT$envT 
+    chemical = df$SDT$exposure.chemical
+    model = df$SDT$model.version
+    
+    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    
+    kd_T <- kd / F_T
+    mw_T <- mw / F_T
+    bw_T <- bw * F_T
+    
+  } else if (method == "SDTstd") {
+    # SDTstd 
+    dates = df$SDTStd$date 
+    envT = df$SDTStd$envT 
+    chemical = df$SDTStd$exposure.chemical
+    model = df$SDTStd$model.version
+    
+    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    
+    kd_T <- kd * F_T
+    mw_T <- mw * F_T
+    bw_T <- bw * F_T
+    
+  } else if (method == "ITT") {
+    # ITT
+    dates = df$SDT$date # Note: The right list element is still called SDT here, even though the model version is ITT
+    envT = df$SDT$envT 
+    chemical = df$SDT$exposure.chemical
+    model = df$SDT$model.version
+    
+    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    
+    kd_T <- kd / F_T
+    mw_T <- mw / F_T
+    bw_T <- NA
+    
+  } else if (method == "ITTstd") {
+    # ITTstd
+    dates = df$SDTStd$date # Note: The right list element is still called SDTStd here, even though the model version is ITTStd
+    envT = df$SDTStd$envT
+    chemical = df$SDTStd$exposure.chemical
+    model = df$SDTStd$model.version
+    
+    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    
+    kd_T <- kd * F_T
+    mw_T <- mw * F_T
+    bw_T <- NA
+  }
+  
+  # Create a data frame for plotting
+  df_param <- data.frame(
+    date = dates,
+    envT = envT,
+    kd = kd,
+    kd_T = kd_T,
+    mw = mw,
+    mw_T = mw_T,
+    bw = bw,
+    bw_T = bw_T
+  )
+  
+  #Plotting
+  # Plot temperature
+  p_T <- ggplot(df_param , aes(x = date, y = envT)) +
+    geom_line(color = "black") +
+    geom_hline(yintercept = 20, linetype = "dashed", color = "gray") +  # Horizontal line at y = 20 (ref temperature)      
+    labs(title = paste("Temperature profile of ", model, "model for ", chemical),
+         x = "Date",
+         y = "Temperature [C]"
+    ) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom",
+          panel.spacing = unit(1, "lines")
+    )
+  
+  # Plot kd and kd_T 
+  p_kd <- ggplot(df_param , aes(x = date, y = kd_T)) +
+    geom_line(color = "blue") +
+    geom_hline(yintercept = kd, linetype = "dashed", color = "red") +  # Horizontal line at y = kd (parameter at ref temperature)      
+    labs(title = paste("Dominant rate (kd) of ", model, "model for ", chemical),
+          x = "Date",
+          y = "Dominant rate: kd [d-1]"
+    ) +
+    scale_y_continuous(labels = scientific) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom",
+          panel.spacing = unit(1, "lines")
+    )
+    
+  # Plot mw and mw_T 
+  p_mw <- ggplot(df_param , aes(x = date, y = mw_T)) +
+    geom_line(color = "darkgreen") +
+    geom_hline(yintercept = mw, linetype = "dashed", color = "red") +  # Horizontal line at y = kd (parameter at ref temperature)      
+    labs(title = paste("Threshold (mw) of ", model, "model for ", chemical),
+          x = "Date",
+          y = "Threshold: mw [µg L-1]"
+    ) +
+    scale_y_continuous(labels = scientific) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "bottom",
+          panel.spacing = unit(1, "lines")
+    )
+    
+
+
+  # Plot bw and bw_T if any
+  if (is.na(df_param$bw[1])) {
+    p_bw <- print("No bw defined for this model type")
+    
+  } else {
+    p_bw <- ggplot(df_param , aes(x = date, y = bw_T)) +
+      geom_line(color = "darkmagenta") +
+      geom_hline(yintercept = bw, linetype = "dashed", color = "darkblue") +  # Horizontal line at y = kd (parameter at ref temperature)      
+      labs(title = paste("Killing Rate (bw) of ", model, "model for ", chemical),
+           x = "Date",
+           y = "Killing Rate: bw [d-1]"
+      ) +
+      scale_y_continuous(labels = scientific) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "bottom",
+            panel.spacing = unit(1, "lines")
+      )
+  } 
+  
+  # Return a list with all parameter plots
+  list(p_T, p_kd, p_mw, p_bw)  
+}
