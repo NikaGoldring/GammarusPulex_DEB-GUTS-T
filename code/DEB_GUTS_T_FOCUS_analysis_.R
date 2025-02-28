@@ -1,59 +1,100 @@
-source("./code/DEB_GUTS_T_FOCUS_functions.R")
+source("./code/DEB_GUTS_T_FOCUS_functions.R",encoding = 'ISO8859-1') # ,encoding = 'ISO8859-1'
 pks.installed <- checkPackages(library.loc = "C:/ProgramData/R/R_4.4.1") # Adjust to your settings
 loadPackages(library.loc = "C:/ProgramData/R/R_4.4.1", # Adjust to your settings
              required.packages.installed = pks.installed)
 
 
-## constant exposures ###################
 
-# Choose T profiles #########################################
+
+# Read data for D3ref scenario ####
 T_D3ref = "./data/runsOct2024_D3ref"   #Adjust to file location 
-# Read data #################################################
-df_SD_D3 <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
-                  guts.model.version = "SD", 
-                  ignore.version = "pulsed", 
-                  ignore.chemical = "FPF",
-                  filter.concentrations = F,
-                  filter.temp.amplitudes = F,
-                  desired.exposure.concentration = F,
-                  desired.temp.amplitude = F,
-                  application.pulse.shift = F)
+## IMI 
+df_SD_D3_IMI <- readData(data.location = T_D3ref , 
+                         guts.model.version = "SD", 
+                         ignore.version = "pulsed", 
+                         ignore.chemical = "FPF",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = F,
+                         application.pulse.shift = F)
 
-df_IT_D3 <- readData(data.location = T_D3ref , #Adjust to  temperature scenario
-                  guts.model.version = "IT", 
-                  ignore.version = "pulsed",
-                  ignore.chemical = "FPF",
-                  filter.concentrations = F,
-                  filter.temp.amplitudes = F,
-                  desired.exposure.concentration = F,
-                  desired.temp.amplitude = 1, 
-                  application.pulse.shift = F)
+df_IT_D3_IMI <- readData(data.location = T_D3ref , 
+                         guts.model.version = "IT", 
+                         ignore.version = "pulsed",
+                         ignore.chemical = "FPF",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = 1, 
+                         application.pulse.shift = F)
+## FPF 
+df_SD_D3_FPF <- readData(data.location = T_D3ref ,
+                         guts.model.version = "SD", 
+                         ignore.version = "pulsed", 
+                         ignore.chemical = "IMI",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = F,
+                         application.pulse.shift = F)
 
-# Choose T profiles #########################################
+df_IT_D3_FPF <- readData(data.location = T_D3ref , 
+                         guts.model.version = "IT", 
+                         ignore.version = "pulsed",
+                         ignore.chemical = "IMI",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = 1, 
+                         application.pulse.shift = F)
+
+# Read data for Hn2150 scenario ####
 T_Hn2150 = "./data/runsOct2024_Hn_2150" #Adjust to file location
-# Read data #################################################
-df_SD_Hn <- readData(data.location = T_Hn2150 , 
-                     guts.model.version = "SD", 
-                     ignore.version = "pulsed", 
-                     ignore.chemical = "FPF",
-                     filter.concentrations = F,
-                     filter.temp.amplitudes = F,
-                     desired.exposure.concentration = F,
-                     desired.temp.amplitude = F,
-                     application.pulse.shift = F)
+## IMI 
+df_SD_Hn_IMI <- readData(data.location = T_Hn2150 , 
+                         guts.model.version = "SD", 
+                         ignore.version = "pulsed", 
+                         ignore.chemical = "FPF",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = F,
+                         application.pulse.shift = F)
 
-df_IT_Hn <- readData(data.location = T_Hn2150 , 
-                     guts.model.version = "IT", 
-                     ignore.version = "pulsed",
-                     ignore.chemical = "FPF",
-                     filter.concentrations = F,
-                     filter.temp.amplitudes = F,
-                     desired.exposure.concentration = F,
-                     desired.temp.amplitude = 1, 
-                     application.pulse.shift = F)
+df_IT_Hn_IMI <- readData(data.location = T_Hn2150 , 
+                         guts.model.version = "IT", 
+                         ignore.version = "pulsed",
+                         ignore.chemical = "FPF",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = 1, 
+                         application.pulse.shift = F)
+
+## FPF
+df_SD_Hn_FPF <- readData(data.location = T_Hn2150 , 
+                         guts.model.version = "SD", 
+                         ignore.version = "pulsed", 
+                         ignore.chemical = "IMI",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = F,
+                         application.pulse.shift = F)
+
+df_IT_Hn_FPF <- readData(data.location = T_Hn2150 , 
+                         guts.model.version = "IT", 
+                         ignore.version = "pulsed",
+                         ignore.chemical = "IMI",
+                         filter.concentrations = F,
+                         filter.temp.amplitudes = F,
+                         desired.exposure.concentration = F,
+                         desired.temp.amplitude = 1, 
+                         application.pulse.shift = F)
 
 
-## Plot of population dynamics in relation to temp amplitude and selected years
+# Plot of population dynamics in relation to temp amplitude and selected years ####
 #SD-constant 
 p1 <- plotTAmpPopDynamics(df_SD.list = df_SD_D3, 
                           exposure.type = "constant",
@@ -68,7 +109,7 @@ p_SDT <- p1$p_envT/p1$SDT + plot_layout(heights = c(1, 2))
 
 (p_SD | p_SDT ) + plot_annotation(title = "SD-IMI") 
 
-#################### Plotting new
+#Plotting new ####
 #SD-constant
 p1 <- plotModelComparison(df_SD.list = df_SD_D3, 
                           desired.exposure.concentrations =  c("0","0.4","0.8","1.2"), # when including control, don't use 0.0 but only 0, else it doesn't match 
@@ -85,65 +126,120 @@ p1 <- plotScenarioComparison(df_D3ref.list = df_SD_D3,
                              time.range = c(1989:2016))
 p1
 
-############# Plotting parameter values IMI
-## Prepare combined df 
-df_D3ref_SD <- process_model_data(df.list = df_SD_D3,
-                                     desired.exposure.concentration =  c("0","0.4","0.8","1.2"),
-                                     time.range = c(1989:2016))
-
-
-# Plot the parameters SDT
-p_SDT <- plot_temp_corrected_parameters(
-  df = df_D3ref_SD,
-  T_A = 27240,
-  kd = 0.01,
-  mw = 1.045e-16 ,
-  bw = 0.098 ,
-  method = "SDT"  
+#Plotting parameter values ####
+# Create a named list of raw dataframes
+List_dfs <- list(
+  SD_D3_IMI = df_SD_D3_IMI,
+  SD_D3_FPF = df_SD_D3_FPF,
+  SD_Hn_IMI = df_SD_Hn_IMI,
+  SD_Hn_FPF = df_SD_Hn_FPF,
+  IT_D3_IMI = df_IT_D3_IMI,
+  IT_D3_FPF = df_IT_D3_FPF,
+  IT_Hn_IMI = df_IT_Hn_IMI,
+  IT_Hn_FPF = df_IT_Hn_FPF
 )
 
-ggarrange(plotlist = p_SDT, ncol = 2, nrow = 2) 
+# Get processed dataframes 
+processed_dfs <- lapply(List_dfs, function(df) {
+  process_model_data(
+    df.list = df,
+    desired.exposure.concentration = c("0", "0.4", "0.8", "1.2"),
+    time.range = c(1989:2016)
+  )
+})
 
-# Plot the parameters SDTstd
-p_SDTStd <- plot_temp_corrected_parameters(
-  df = df_D3ref_SD,
-  T_A = 100,
-  kd = 0.030, 
-  mw = 1.483e-13 ,
-  bw = 0.004 , 
-  method = "SDTstd" 
+# Define parameters for each model method and compound
+params <- list(
+  SDT = list(
+    IMI = list(T_A = 27240, kd = 0.01, mw = 1.045e-16, bw = 0.098),
+    FPF = list(T_A = 20110, kd = 0.017, mw = 4.322e-17, bw = 0.019)
+  ),
+  SDTstd = list(
+    IMI = list(T_A = 100, kd = 0.030, mw = 1.483e-13, bw = 0.004),
+    FPF = list(T_A = 6489, kd = 0.019, mw = 0, bw = 0.025)
+  ),
+  ITT = list(
+    IMI = list(T_A = 1919, kd = 0.01, mw = 0.620, bw = NA),
+    FPF = list(T_A = 12720, kd = 0.001, mw = 0.133, bw = NA)
+  ),
+  ITTstd = list(
+    IMI = list(T_A = 2529, kd = 0.01, mw = 0.596, bw = NA),
+    FPF = list(T_A = 14010, kd = 0.001, mw = 0.124, bw = NA)
+  )
 )
 
-ggarrange(plotlist = p_SDTStd, ncol = 2, nrow = 2) 
+# Generate all plots
+# SDT plots 
+SDT_D3 <- param_eval(processed_dfs$SD_D3_IMI, processed_dfs$SD_D3_FPF, "SDT", 
+           params$SDT$IMI, params$SDT$FPF)
+# SDT_D3$df_IMI
+# SDT_D3$df_FPF
+# SDT_D3$plots
 
-####### Prepare combined df for IT version
-df_D3ref_IT <- process_model_data(df.list = df_IT_D3,
-                                     desired.exposure.concentration =  c("0","0.4","0.8","1.2"),
-                                     time.range = c(1989:2016))
-# Plot the parameters ITT
-p_ITT <- plot_temp_corrected_parameters(
-  df = df_D3ref_IT,
-  T_A = 1919,
-  kd = 0.01, 
-  mw = 0.620,
-  bw = NA,
-  method = "ITT"  
-)
+SDT_Hn <- param_eval(processed_dfs$SD_Hn_IMI, processed_dfs$SD_Hn_FPF, "SDT", 
+           params$SDT$IMI, params$SDT$FPF)
 
-ggarrange(plotlist = p_ITT, ncol = 2, nrow = 2) 
+# SDTstd plots
+SDTstd_D3 <- param_eval(processed_dfs$SD_D3_IMI, processed_dfs$SD_D3_FPF, "SDTstd", 
+           params$SDTstd$IMI, params$SDTstd$FPF)
 
-# Plot the parameters ITTstd
-p_ITTStd <- plot_temp_corrected_parameters(
-  df = df_D3ref_IT,
-  T_A = 2529,
-  kd = 0.01, 
-  mw = 0.596,
-  bw = NA, 
-  method = "ITTStd" 
-)
+SDTstd_Hn <- param_eval(processed_dfs$SD_Hn_IMI, processed_dfs$SD_Hn_FPF, "SDTstd", 
+           params$SDTstd$IMI, params$SDTstd$FPF)
 
-ggarrange(plotlist = p_ITTStd, ncol = 2, nrow = 2) 
+# ITT plots
+ITT_D3 <- param_eval(processed_dfs$IT_D3_IMI, processed_dfs$IT_D3_FPF, "ITT", 
+           params$ITT$IMI, params$ITT$FPF)
 
+ITT_Hn <- param_eval(df_IMI=processed_dfs$IT_Hn_IMI, 
+           df_FPF=processed_dfs$IT_Hn_FPF, 
+           method="ITT", 
+           params_IMI=params$ITT$IMI, 
+           params_FPF=params$ITT$FPF)
+
+# ITTstd plots
+ITTstd_D3 <- param_eval(processed_dfs$IT_D3_IMI, processed_dfs$IT_D3_FPF, "ITTstd", 
+           params$ITTstd$IMI, params$ITTstd$FPF)
+
+ITTstd_Hn <- param_eval(processed_dfs$IT_Hn_IMI, processed_dfs$IT_Hn_FPF, "ITTstd", 
+           params$ITTstd$IMI, params$ITTstd$FPF)
+
+
+# Plotting cummulative frequencies ####
+# D3 scenarios
+D3_SD_IMI <- param_cumm_freq(df_method_T = SDT_D3$df_IMI,
+                          df_method_Std = SDTstd_D3$df_IMI, 
+                          chem = "IMI")
+D3_SD_IMI 
+
+D3_SD_FPF <- param_cumm_freq(df_method_T = SDT_D3$df_FPF,
+                          df_method_Std = SDTstd_D3$df_FPF, 
+                          chem = "FPF")
+
+D3_IT_IMI <- param_cumm_freq(df_method_T = ITT_D3$df_IMI,
+                             df_method_Std = ITTstd_D3$df_IMI, 
+                             chem = "IMI")
+
+D3_IT_FPF <- param_cumm_freq(df_method_T = ITT_D3$df_FPF,
+                             df_method_Std = ITTstd_D3$df_FPF, 
+                             chem = "FPF")
+
+
+# Hn scenarios
+Hn_SD_IMI <- param_cumm_freq(df_method_T = SDT_Hn$df_IMI,
+                          df_method_Std = SDTstd_Hn$df_IMI, 
+                          chem = "IMI")
+
+Hn_SD_FPF <- param_cumm_freq(df_method_T = SDT_Hn$df_FPF,
+                          df_method_Std = SDTstd_Hn$df_FPF, 
+                          chem = "FPF")
+
+Hn_IT_IMI <- param_cumm_freq(df_method_T = ITT_Hn$df_IMI,
+                             df_method_Std = ITTstd_Hn$df_IMI, 
+                             chem = "IMI")
+
+Hn_IT_FPF <- param_cumm_freq(df_method_T = ITT_Hn$df_FPF,
+                             df_method_Std = ITTstd_Hn$df_FPF, 
+                             chem = "FPF")
 
 #############################################################################################
 

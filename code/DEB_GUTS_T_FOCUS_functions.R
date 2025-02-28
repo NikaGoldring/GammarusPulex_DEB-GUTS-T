@@ -46,8 +46,8 @@ readData <- function(data.location,
       c(list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))],
         list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F)[grepl(x,x = list.dirs(path = paste0(data.location,"pulse_shift"),recursive = F,full.names = F))])}
     else{
-        list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))]
-        }}) %>% 
+      list.dirs(path = data.location,recursive = F)[grepl(x,x = list.dirs(path = data.location,recursive = F,full.names = F))]
+    }}) %>% 
     do.call(rbind,.) %>% as.vector()
   
   # Exclude (therefore it's called ignore) the folders of either constant = "verylow", or pulsed exposure. 
@@ -117,7 +117,7 @@ readData <- function(data.location,
     output <- lapply(ls, function(y) {  # for each element y in ls 
       # Store the temperature information used in the simulations 
       envT <- read.delim(list.files(path = paste0(x,"/x1/",y), pattern = "environment",full.names = T)[1])
-        
+      
       # Only look for folders with "stagestructureEmbJuvAdultsInds"
       # these contain, for each day in the simulation, the number of individuals.
       ls.data.files <- list.files(path = paste0(x,"/x1/",y), pattern = "stageStructureEmbrJuvAdultsInds",full.names = T)
@@ -125,51 +125,51 @@ readData <- function(data.location,
       input <- lapply(ls.data.files, function(z){ 
         ind <- read.delim(file = z)[,4] # More specifically: only keep column 4 of the data which is the total number of all stages combined.
         ind
-          }
+      }
       ) %>% do.call(cbind,.) %>% as.matrix()
-        
+      
       # some scenarios don't survive the first period, these should only used if >=3 of the replicates survive the first year
       input <- as.matrix(input[,apply(as.matrix(input[(temp.info$`startApplicationYear:` - temp.info$`startYear:`)*365,]),2,FUN = function(x) x>0)])
-        
+      
       # calculate the means and SDs for each of the replicates
       if(application.pulse.shift){
         if(ncol(input)>=3){
           output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
-                                          envT = envT$temperature,
-                                          scenario.id = y,
-                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
-                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
-                                          time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],
-                                                                                    split = "_")[[1]][5],"t")[[1]][2]))}
-        else{
-          output.scenario <- data.frame(mean = NA, sd = NA,
-                                          envT = envT$temperature,
-                                          scenario.id = y,
-                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
-                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
-                                          time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][[length(strsplit(x,split = "/")[[1]])]],
-                                                                                    split = "_")[[1]][5],"t")[[1]][2]))
-        }
-      }
-      else{
-        if(ncol(input)>=3){
-          output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
-                                          envT = envT$temperature,
-                                          scenario.id = y,
-                                          model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
-                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
-                                          exposure.chemical = exposure.chemical,
-                                          T.scenario = sub(".*_", "", data.location) # get T.sceanrio from data.location string
-                                        )} 
+                                        envT = envT$temperature,
+                                        scenario.id = y,
+                                        model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                               stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
+                                        time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],
+                                                                                  split = "_")[[1]][5],"t")[[1]][2]))}
         else{
           output.scenario <- data.frame(mean = NA, sd = NA,
                                         envT = envT$temperature,
                                         scenario.id = y,
                                         model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
-                                                                 stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  
+                                                               stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])),
+                                        time_shift = as.numeric(strsplit(strsplit(strsplit(x,split = "/")[[1]][[length(strsplit(x,split = "/")[[1]])]],
+                                                                                  split = "_")[[1]][5],"t")[[1]][2]))
+        }
+      }
+      else{
+        if(ncol(input)>=3){
+          output.scenario <- data.frame(mean = apply(input,1,FUN = mean), sd = apply(input,1,FUN = sd),
+                                        envT = envT$temperature,
+                                        scenario.id = y,
+                                        model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                               stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  ## Maybe use data.location that is provided as function argument
                                         exposure.chemical = exposure.chemical,
                                         T.scenario = sub(".*_", "", data.location) # get T.sceanrio from data.location string
-                                        )}
+          )} 
+        else{
+          output.scenario <- data.frame(mean = NA, sd = NA,
+                                        envT = envT$temperature,
+                                        scenario.id = y,
+                                        model.version = substr(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1],start = 3,
+                                                               stop = nchar(strsplit(strsplit(x,split = "/")[[1]][length(strsplit(x,split = "/")[[1]])],split = "fGammarus")[[1]][1])), # Hard coded file path, needs adjustment  
+                                        exposure.chemical = exposure.chemical,
+                                        T.scenario = sub(".*_", "", data.location) # get T.sceanrio from data.location string
+          )}
       }
       output.scenario
     })
@@ -200,14 +200,14 @@ extract_and_filter_scenarios <- function(df.list,
     select.scens <- scens$exposureConcentration %in% desired.exposure.concentration
     scens <- scens[select.scens, , drop = FALSE]
   }
-return(list(scens=scens, select.scens = select.scens)) #Returns all or selected scens as df and select.scen as logi for filtering
+  return(list(scens=scens, select.scens = select.scens)) #Returns all or selected scens as df and select.scen as logi for filtering
 }
 
 ## Helper function to process a list of data frames
 process_model_data <- function(df.list, 
                                desired.exposure.concentration, 
                                time.range) {
-
+  
   ## Get scenario info to define application window
   startYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "startYear:"]
   endYear <- df.list[[1]]$run.info$V2[df.list[[1]]$run.info$V1 == "endYear:"]
@@ -286,7 +286,7 @@ process_model_data <- function(df.list,
   
   df.SDTStd <- df.SDTStd[format(df.SDTStd$date,"%Y") %in% h,]
   df.SDTStd$year <- format(df.SDTStd$date,"%Y")
-
+  
   return(list(SD = df.SD, SDT= df.SDT, SDTStd = df.SDTStd)) ##Returns filtered dfs
 }
 
@@ -625,7 +625,7 @@ plotTAmpPopDynamics <- function(df_SD.list,
     # create boolean for scenarios
     if(!is.null(desired.exposure.concentrations)){
       select.scens <- scens$exposureConcentration %in% desired.exposure.concentrations
-    scens <- scens[select.scens,]}else{select.scens <- rep(T,length(scens$exposureConcentration))}
+      scens <- scens[select.scens,]}else{select.scens <- rep(T,length(scens$exposureConcentration))}
     
     
     # select all dataframes matching the desired concentrations and T-amplitudes by matching multiple string patterns
@@ -784,7 +784,7 @@ plotTAmpPopDynamics <- function(df_SD.list,
           theme(legend.position = "right") +
           coord_cartesian(ylim = c(0, max(df.SD$mean,df.SDT$mean)*1.1),expand = T) +
           theme_pubr(x.text.angle = 45)
-
+        
       }
     }
     # Plot for environmental temperature
@@ -805,12 +805,12 @@ plotTAmpPopDynamics <- function(df_SD.list,
 plotModelComparison <- function(df_SD.list,
                                 desired.exposure.concentrations,
                                 time.range
-                                ){
+){
   
   ## Prepare df 
   # full data set
   df <- df_SD.list
-
+  
   ## Get exposure concentrations 
   # select all scenarios matching concentrations  ->> This should go into a seperate function that is called here and in other functions, to avoid correcting it in multiple places ic code needs changing
   scens <- as.matrix(df[[1]]$scenarios$V1)
@@ -923,11 +923,11 @@ plotModelComparison <- function(df_SD.list,
          x = "Date",
          y = "Mean",
          color = "Model Version"
-        ) +
+    ) +
     theme_minimal() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1),
           legend.position = "bottom"
-        )
+    )
   #list(p1)
 } 
 
@@ -947,23 +947,23 @@ plotScenarioComparison <- function(df_D3ref.list,
   df_D3ref$SD$mean_rel      <- df_D3ref$SD$mean      / df_D3ref$SD$mean
   df_D3ref$SD$CV            <- (df_D3ref$SD$sd        / df_D3ref$SD$mean) * 100
   df_D3ref$SD$CV_rel        <- df_D3ref$SD$CV        / df_D3ref$SD$CV
-
+  
   df_D3ref$SDT$mean_rel     <- df_D3ref$SDT$mean     / df_D3ref$SD$mean
   df_D3ref$SDT$CV           <- (df_D3ref$SDT$sd       / df_D3ref$SDT$mean) *100
   df_D3ref$SDT$CV_rel       <- df_D3ref$SDT$CV       / df_D3ref$SD$CV
-
+  
   df_D3ref$SDTStd$mean_rel  <- df_D3ref$SDTStd$mean  / df_D3ref$SD$mean
   df_D3ref$SDTStd$CV        <- (df_D3ref$SDTStd$sd    / df_D3ref$SDTStd$mean) *100
   df_D3ref$SDTStd$CV_rel    <- df_D3ref$SDTStd$CV    / df_D3ref$SD$CV
-########
+  ########
   df_Hn2150$SD$mean_rel     <- df_Hn2150$SD$mean     / df_Hn2150$SD$mean
   df_Hn2150$SD$CV           <- (df_Hn2150$SD$sd       / df_Hn2150$SD$mean) *100
   df_Hn2150$SD$CV_rel       <- df_Hn2150$SD$CV       / df_Hn2150$SD$CV 
-
+  
   df_Hn2150$SDT$mean_rel    <- df_Hn2150$SDT$mean    / df_Hn2150$SD$mean
   df_Hn2150$SDT$CV          <- (df_Hn2150$SDT$sd      / df_Hn2150$SDT$mean) *100
   df_Hn2150$SDT$CV_rel      <- df_Hn2150$SDT$CV      / df_Hn2150$SD$CV
-
+  
   df_Hn2150$SDTStd$mean_rel <- df_Hn2150$SDTStd$mean / df_Hn2150$SD$mean
   df_Hn2150$SDTStd$CV       <- (df_Hn2150$SDTStd$sd   / df_Hn2150$SDTStd$mean) *100
   df_Hn2150$SDTStd$CV_rel   <- df_Hn2150$SDTStd$CV   / df_Hn2150$SD$CV
@@ -972,7 +972,7 @@ plotScenarioComparison <- function(df_D3ref.list,
   combined_df <- bind_rows(df_D3ref$SD,     df_Hn2150$SD,
                            df_D3ref$SDT,    df_Hn2150$SDT,
                            df_D3ref$SDTStd, df_Hn2150$SDTStd)
-
+  
   
   
   
@@ -1187,12 +1187,7 @@ plotPopQuantilesTvsNoT <- function(popsize.data.frame,
 }
 
 
-plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.15, method) {
-  # Create a dynamic title
-  model_versions <- unique(df$model.version)
-  esposure_chemical <- unique(df$exposure.chemical)
-  dynamic_title <- paste("Model Comparisons:", paste(model_versions, collapse = ", "), "for", paste(esposure_chemical, collapse = ", "), "exposure")
-
+temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.15, method) {
   
   # Calculate temperature correction factor and corrected parameters
   if (method == "SDT" ) {
@@ -1202,7 +1197,7 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
     chemical = df$SDT$exposure.chemical
     model = df$SDT$model.version
     
-    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    F_T <- exp((T_A / ref_temp) - (T_A / (envT+273.15)))
     
     kd_T <- kd / F_T
     mw_T <- mw / F_T
@@ -1215,7 +1210,7 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
     chemical = df$SDTStd$exposure.chemical
     model = df$SDTStd$model.version
     
-    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    F_T <- exp((T_A / ref_temp) - (T_A / (envT+273.15)))
     
     kd_T <- kd * F_T
     mw_T <- mw * F_T
@@ -1228,7 +1223,7 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
     chemical = df$SDT$exposure.chemical
     model = df$SDT$model.version
     
-    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    F_T <- exp((T_A / ref_temp) - (T_A / (envT+273.15)))
     
     kd_T <- kd / F_T
     mw_T <- mw / F_T
@@ -1241,7 +1236,7 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
     chemical = df$SDTStd$exposure.chemical
     model = df$SDTStd$model.version
     
-    F_T <- exp((T_A / ref_temp) - (T_A / envT))
+    F_T <- exp((T_A / ref_temp) - (T_A / (envT+273.15)))
     
     kd_T <- kd * F_T
     mw_T <- mw * F_T
@@ -1265,6 +1260,7 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
   p_T <- ggplot(df_param , aes(x = date, y = envT)) +
     geom_line(color = "black") +
     geom_hline(yintercept = 20, linetype = "dashed", color = "gray") +  # Horizontal line at y = 20 (ref temperature)      
+    ylim(4,35)+
     labs(title = paste("Temperature profile of ", model, "model for ", chemical),
          x = "Date",
          y = "Temperature [C]"
@@ -1280,8 +1276,8 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
     geom_line(color = "blue") +
     geom_hline(yintercept = kd, linetype = "dashed", color = "red") +  # Horizontal line at y = kd (parameter at ref temperature)      
     labs(title = paste("Dominant rate (kd) of ", model, "model for ", chemical),
-          x = "Date",
-          y = "Dominant rate: kd [d-1]"
+         x = "Date",
+         y = "Dominant rate: kd [d-1]"
     ) +
     scale_y_continuous(labels = scientific) +
     theme_minimal() +
@@ -1289,14 +1285,14 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
           legend.position = "bottom",
           panel.spacing = unit(1, "lines")
     )
-    
+  
   # Plot mw and mw_T 
   p_mw <- ggplot(df_param , aes(x = date, y = mw_T)) +
     geom_line(color = "darkgreen") +
-    geom_hline(yintercept = mw, linetype = "dashed", color = "red") +  # Horizontal line at y = kd (parameter at ref temperature)      
+    geom_hline(yintercept = mw, linetype = "dashed", color = "red") +  # Horizontal line at y = mw (parameter at ref temperature)      
     labs(title = paste("Threshold (mw) of ", model, "model for ", chemical),
-          x = "Date",
-          y = "Threshold: mw [µg L-1]"
+         x = "Date",
+         y = "Threshold: mw [µg L-1]"
     ) +
     scale_y_continuous(labels = scientific) +
     theme_minimal() +
@@ -1304,17 +1300,17 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
           legend.position = "bottom",
           panel.spacing = unit(1, "lines")
     )
-    
-
-
+  
+  
+  
   # Plot bw and bw_T if any
   if (is.na(df_param$bw[1])) {
-    p_bw <- print("No bw defined for this model type")
+    p_bw <- ggplot() # empty object so that plotting of other elements is not missaligned due to missing figure
     
   } else {
     p_bw <- ggplot(df_param , aes(x = date, y = bw_T)) +
       geom_line(color = "darkmagenta") +
-      geom_hline(yintercept = bw, linetype = "dashed", color = "darkblue") +  # Horizontal line at y = kd (parameter at ref temperature)      
+      geom_hline(yintercept = bw, linetype = "dashed", color = "darkblue") +  # Horizontal line at y = bw (parameter at ref temperature)      
       labs(title = paste("Killing Rate (bw) of ", model, "model for ", chemical),
            x = "Date",
            y = "Killing Rate: bw [d-1]"
@@ -1327,6 +1323,140 @@ plot_temp_corrected_parameters <- function(df, kd, mw, bw, T_A, ref_temp = 293.1
       )
   } 
   
-  # Return a list with all parameter plots
-  list(p_T, p_kd, p_mw, p_bw)  
+  
+  # Create a list with all parameter plots
+  plots <- list(p_T, p_kd, p_mw, p_bw)  
+  
+  output <- list(df_param = df_param, plots = plots)
+  # Return df_param and plots
+  return(output)
 }
+
+# Function to streamline the parameter processing and plotting process 
+param_eval <- function(df_IMI, df_FPF, method, params_IMI, params_FPF) {
+  # Plot parameters for IMI
+  p_IMI <- temp_corrected_parameters(
+    df = df_IMI,
+    T_A = params_IMI$T_A,
+    kd = params_IMI$kd,
+    mw = params_IMI$mw,
+    bw = params_IMI$bw,
+    method = method
+  )
+  
+  # Plot parameters for FPF
+  p_FPF <- temp_corrected_parameters(
+    df = df_FPF,
+    T_A = params_FPF$T_A,
+    kd = params_FPF$kd,
+    mw = params_FPF$mw,
+    bw = params_FPF$bw,
+    method = method
+  )
+  
+  # Arrange and display plots
+  plot_IMI <- ggarrange(plotlist = p_IMI$plots, ncol = 1, nrow = length(p_IMI$plots), align = "hv")
+  plot_FPF <- ggarrange(plotlist = p_FPF$plots, ncol = 1, nrow = length(p_IMI$plots), align = "hv")
+  
+  df_IMI <- p_IMI$df_param
+  df_FPF <- p_FPF$df_param
+  
+  # Return list of plots for both chemicals 
+  plots <- list(par_plot_IMI = plot_IMI, par_plot_FPF = plot_FPF)
+  
+  output <- list(df_IMI = df_IMI, df_FPF = df_FPF, plots = plots)
+  # Return df_param and plots
+  return(output)
+}
+
+# plot CFD
+param_cumm_freq <- function(df_method_T, 
+                            df_method_Std, 
+                            chem) {
+  # # Prepare df for plotting
+
+  df_T <- df_method_T %>%
+    mutate(
+      kd_norm = kd_T/kd,
+      mw_norm = mw_T/mw,
+      bw_norm = bw_T/bw,
+      method = "T",
+      chem = chem
+    )
+  
+  df_Std <- df_method_Std %>%
+    mutate(
+      kd_norm = kd_T/kd,
+      mw_norm = mw_T/mw,
+      bw_norm = bw_T/bw,
+      method = "Std",
+      chem = chem
+    )
+  
+  df_cumm <- rbind(df_T, df_Std)
+  
+  # Compute cumulative frequency for kd                                ## Add the same workflow also for mw and bw 
+  df_cumm_kd <- df_cumm %>%
+    group_by(method) %>%
+    arrange(kd_T) %>%
+    mutate(cum_freq = row_number()/n())
+
+  
+  # Plot kd 
+  p_kd <-ggplot(df_cumm_kd, aes(x = cum_freq, y = (kd_T), color = method), ) +
+    geom_line() +
+    geom_hline(aes(yintercept = kd, color = method), 
+               linetype = "dashed", size = 1) +
+    scale_color_manual(values = c("Std" = "blue", "T" = "forestgreen")) +
+    labs(
+      title = "Cumulative Frequency Distribution of kd_T by Model Version",
+      x = "Cumulative Frequency",
+      y = "kd_T",
+      color = "Model Version"
+    ) +
+    theme_minimal()
+  
+  # Compute cumulative frequency for mw                              
+  df_cumm_mw <- df_cumm %>%
+    group_by(method) %>%
+    arrange(mw_T) %>%
+    mutate(cum_freq = row_number()/n())
+  
+  # Plot kd 
+  p_mw <-ggplot(df_cumm_mw, aes(x = cum_freq, y = (mw_T), color = method)) +
+    geom_line() +
+    geom_hline(aes(yintercept = mw, color = method), 
+               linetype = "dashed", size = 1) +
+    scale_color_manual(values = c("Std" = "blue", "T" = "forestgreen")) +
+    labs(
+      title = "Cumulative Frequency Distribution of mw_T by Model Version",
+      x = "Cumulative Frequency",
+      y = "mw_T",
+      color = "Model Version"
+    ) +
+    theme_minimal()
+  
+  # Compute cumulative frequency for bww                              
+  df_cumm_bw <- df_cumm %>%
+    group_by(method) %>%
+    arrange(bw_T) %>%
+    mutate(cum_freq = row_number()/n())
+  
+  # Plot kd 
+  p_bw <-ggplot(df_cumm_bw, aes(x = cum_freq, y = (bw_T), color = method)) +
+    geom_line() +
+    geom_hline(aes(yintercept = bw, color = method), 
+               linetype = "dashed", size = 1) +
+    scale_color_manual(values = c("Std" = "blue", "T" = "forestgreen")) +
+    labs(
+      title = "Cumulative Frequency Distribution of bw_T by Model Version",
+      x = "Cumulative Frequency",
+      y = "bw_T",
+      color = "Model Version"
+    ) +
+    theme_minimal()
+  
+  list(p_kd, p_mw, p_bw)
+       
+}
+
